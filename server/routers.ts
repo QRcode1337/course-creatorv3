@@ -987,6 +987,41 @@ const aiChatRouter = router({
 
       return { response };
     }),
+
+  // Chat about a course (overview level)
+  chatCourse: protectedProcedure
+    .input(z.object({
+      courseId: z.number(),
+      messages: z.array(z.object({
+        role: z.enum(["system", "user", "assistant"]),
+        content: z.string(),
+      })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const course = await db.getCourseById(input.courseId);
+      if (!course) throw new Error("Course not found");
+
+      // Fetch chapters and lessons for the course
+      const courseChapters = await db.getChaptersByCourseId(input.courseId);
+      const chaptersWithLessons = await Promise.all(
+        courseChapters.map(async (ch) => {
+          const chapterLessons = await db.getLessonsByChapterId(ch.id);
+          return {
+            title: ch.title,
+            lessons: chapterLessons.map((l) => l.title),
+          };
+        })
+      );
+
+      const response = await ai.chatAboutCourse(
+        course.title,
+        course.description || "",
+        chaptersWithLessons,
+        input.messages
+      );
+
+      return { response };
+    }),
 });
 
 export const appRouter = router({

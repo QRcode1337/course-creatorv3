@@ -5,10 +5,14 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import Header from "@/components/Header";
 import { trpc } from "@/lib/trpc";
-import { Link, useParams } from "wouter";
+import { Link, useParams, useLocation } from "wouter";
 import { toast } from "sonner";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Streamdown } from "streamdown";
 import {
   ArrowLeft,
   BookOpen,
@@ -16,11 +20,16 @@ import {
   CheckCircle2,
   ChevronRight,
   Download,
+  HelpCircle,
   Layers,
+  Lightbulb,
   Loader2,
+  MessageCircle,
   Play,
+  Send,
   Sparkles,
   Trash2,
+  Zap,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -33,13 +42,22 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useLocation } from "wouter";
+
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
 
 export default function CourseView() {
   const { id } = useParams<{ id: string }>();
   const courseId = parseInt(id || "0");
   const { user } = useAuth();
   const [, navigate] = useLocation();
+
+  // AI Chat state
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   const { data: course, isLoading } = trpc.course.get.useQuery(
     { id: courseId },
@@ -74,6 +92,43 @@ export default function CourseView() {
       toast.error(error.message || "Failed to generate flashcards");
     },
   });
+
+  const aiChat = trpc.aiChat.chatCourse.useMutation({
+    onSuccess: (data) => {
+      setChatMessages(prev => [...prev, { role: "assistant", content: data.response }]);
+    },
+    onError: () => {
+      toast.error("Failed to get response");
+    },
+  });
+
+  // Scroll chat to bottom when new messages arrive
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+
+  const handleSendChatMessage = useCallback((message: string) => {
+    if (!message.trim() || !course) return;
+    
+    const newMessages: ChatMessage[] = [...chatMessages, { role: "user", content: message }];
+    setChatMessages(newMessages);
+    setChatInput("");
+    
+    aiChat.mutate({
+      courseId,
+      messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+    });
+  }, [chatMessages, courseId, course, aiChat]);
+
+  // Suggestion buttons for AI chat
+  const chatSuggestions = [
+    { icon: Lightbulb, label: "Overview", prompt: "Give me a brief overview of what I'll learn in this course." },
+    { icon: Zap, label: "Prerequisites", prompt: "What should I know before starting this course?" },
+    { icon: HelpCircle, label: "Study tips", prompt: "What are the best strategies to learn this material effectively?" },
+    { icon: BookOpen, label: "Key concepts", prompt: "What are the most important concepts I should focus on in this course?" },
+  ];
 
   if (isLoading) {
     return (
@@ -117,9 +172,9 @@ export default function CourseView() {
           </Button>
         </Link>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Main content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="xl:col-span-2 space-y-6">
             {/* Course header */}
             <Card>
               <CardHeader>
@@ -256,10 +311,117 @@ export default function CourseView() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* AI Tutor Card */}
+            <Card className="sticky top-24">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-primary" />
+                  AI Course Assistant
+                </CardTitle>
+                <CardDescription>
+                  Ask questions about this course
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {user ? (
+                  <>
+                    {/* Suggestion buttons */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {chatSuggestions.map((suggestion, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          className="h-auto py-2 px-3 justify-start gap-2 text-left"
+                          onClick={() => handleSendChatMessage(suggestion.prompt)}
+                          disabled={aiChat.isPending}
+                        >
+                          <suggestion.icon className="w-4 h-4 shrink-0 text-primary" />
+                          <span className="text-xs">{suggestion.label}</span>
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Chat messages */}
+                    <ScrollArea className="h-[280px] pr-4" ref={chatScrollRef}>
+                      <div className="space-y-4">
+                        {chatMessages.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                            <p className="text-sm">Click a suggestion or ask your own question!</p>
+                          </div>
+                        ) : (
+                          chatMessages.map((message, index) => (
+                            <div
+                              key={index}
+                              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                            >
+                              <div
+                                className={`max-w-[90%] rounded-lg px-3 py-2 text-sm ${
+                                  message.role === "user"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted"
+                                }`}
+                              >
+                                {message.role === "assistant" ? (
+                                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                                    <Streamdown>{message.content}</Streamdown>
+                                  </div>
+                                ) : (
+                                  message.content
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                        {aiChat.isPending && (
+                          <div className="flex justify-start">
+                            <div className="bg-muted rounded-lg px-3 py-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+
+                    {/* Chat input */}
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Ask about this course..."
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendChatMessage(chatInput);
+                          }
+                        }}
+                        disabled={aiChat.isPending}
+                      />
+                      <Button
+                        size="icon"
+                        onClick={() => handleSendChatMessage(chatInput)}
+                        disabled={aiChat.isPending || !chatInput.trim()}
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <MessageCircle className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Sign in to chat with AI Assistant
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Quick Actions */}
             {user && (
               <Card>
-                <CardHeader>
+                <CardHeader className="pb-3">
                   <CardTitle className="text-lg">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -293,7 +455,7 @@ export default function CourseView() {
             {/* Flashcard Stats */}
             {user && flashcardStats && (
               <Card>
-                <CardHeader>
+                <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Layers className="w-5 h-5" />
                     Flashcards
@@ -325,7 +487,7 @@ export default function CourseView() {
             {/* Related Topics */}
             {course.relatedTopics && course.relatedTopics.length > 0 && (
               <Card>
-                <CardHeader>
+                <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Brain className="w-5 h-5" />
                     Related Topics
@@ -374,7 +536,7 @@ export default function CourseView() {
             {/* Glossary Preview */}
             {course.glossaryTerms && course.glossaryTerms.length > 0 && (
               <Card>
-                <CardHeader>
+                <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <BookOpen className="w-5 h-5" />
                     Glossary

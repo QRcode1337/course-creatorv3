@@ -178,3 +178,8 @@
 - [x] Add suggestion buttons (explain simply, give examples, quiz me, etc.)
 - [x] Improve chat layout and styling
 - [x] Make suggestions contextual to lesson content
+
+
+## Bug Fixes
+- [x] Fix DialogTitle accessibility error on course page
+- [x] Add AI chatbox to course page (CourseView)

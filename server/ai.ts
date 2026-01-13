@@ -992,3 +992,62 @@ If the student asks about something not covered in the lesson, acknowledge it an
 
   return content;
 }
+
+
+// Chat about a course (overview level)
+export async function chatAboutCourse(
+  courseTitle: string,
+  courseDescription: string,
+  chapters: { title: string; lessons: string[] }[],
+  messages: ChatMessage[],
+  userSettings?: UserSettings
+): Promise<string> {
+  const chapterOutline = chapters.map((ch, i) => 
+    `Chapter ${i + 1}: ${ch.title}\n  Lessons: ${ch.lessons.join(", ")}`
+  ).join("\n");
+
+  const systemPrompt = `You are an expert educational advisor helping a student understand the course "${courseTitle}".
+
+COURSE DESCRIPTION:
+${courseDescription}
+
+COURSE STRUCTURE:
+${chapterOutline}
+
+---
+
+Your role is to:
+1. Provide an overview of what the course covers
+2. Explain prerequisites and what students should know beforehand
+3. Suggest study strategies and learning paths
+4. Answer questions about the course structure and content
+5. Help students understand how different chapters and lessons connect
+6. Recommend which lessons to focus on based on student goals
+
+Keep your responses:
+- Helpful and encouraging
+- Focused on the course as a whole
+- Clear about what each section covers
+- Well-formatted with markdown when helpful
+
+If asked about specific lesson content, suggest they open that lesson for detailed information.`;
+
+  const fullMessages: ChatMessage[] = [
+    { role: "system", content: systemPrompt },
+    ...messages.filter(m => m.role !== "system")
+  ];
+
+  const response = await invokeLLM({
+    messages: fullMessages.map(m => ({
+      role: m.role as "system" | "user" | "assistant",
+      content: m.content
+    }))
+  });
+
+  const content = response.choices[0]?.message?.content;
+  if (!content || typeof content !== 'string') {
+    throw new Error("Failed to get AI response");
+  }
+
+  return content;
+}
