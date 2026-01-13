@@ -396,6 +396,37 @@ export default function LessonView() {
                   </TabsList>
 
                   <TabsContent value="content" className="space-y-6">
+                    {/* Illustrations - Full size at top */}
+                    {lesson.illustrations && lesson.illustrations.length > 0 && (
+                      <div className="space-y-4">
+                        {lesson.illustrations.map((illustration) => (
+                          <div key={illustration.id} className="relative group">
+                            <img
+                              src={illustration.imageUrl}
+                              alt={illustration.caption || "Lesson illustration"}
+                              className="w-full rounded-lg border"
+                            />
+                            {isOwner && (
+                              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  onClick={() => deleteIllustration.mutate({ id: illustration.id })}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            )}
+                            {illustration.caption && (
+                              <p className="text-sm text-muted-foreground mt-2 text-center italic">
+                                {illustration.caption}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Lesson content */}
                     <div className="prose prose-slate max-w-none dark:prose-invert">
                       <Streamdown>{lesson.content || "No content available."}</Streamdown>
@@ -426,133 +457,101 @@ export default function LessonView() {
                       </Card>
                     )}
 
-                    {/* Illustrations */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">Illustrations</h3>
-                        {isOwner && (
-                          <Dialog open={mediaDialogOpen} onOpenChange={setMediaDialogOpen}>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="gap-2">
-                                <Plus className="w-4 h-4" />
-                                Add More
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="sm:max-w-[500px]">
-                              <DialogHeader>
-                                <DialogTitle>Generate Lesson Media</DialogTitle>
-                                <DialogDescription>
-                                  Create visual content to enhance this lesson
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                  <Label>Media Type</Label>
-                                  <Select value={mediaType} onValueChange={(v) => setMediaType(v as typeof mediaType)}>
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="illustration">Illustration</SelectItem>
-                                      <SelectItem value="infographic">Infographic</SelectItem>
-                                      <SelectItem value="data_visualization">Data Visualization</SelectItem>
-                                      <SelectItem value="diagram">Diagram</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Visual Style</Label>
-                                  <Select value={visualStyle} onValueChange={(v) => setVisualStyle(v as typeof visualStyle)}>
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="minimalist">Minimalist</SelectItem>
-                                      <SelectItem value="detailed">Detailed</SelectItem>
-                                      <SelectItem value="colorful">Colorful</SelectItem>
-                                      <SelectItem value="technical">Technical</SelectItem>
-                                      <SelectItem value="modern">Modern</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Custom Prompt (Optional)</Label>
-                                  <Textarea
-                                    placeholder="Describe what you want to visualize..."
-                                    value={customPrompt}
-                                    onChange={(e) => setCustomPrompt(e.target.value)}
-                                  />
-                                </div>
-                                <Button
-                                  onClick={() => generateMedia.mutate({
-                                    lessonId,
-                                    courseId: lesson.courseId,
-                                    mediaType,
-                                    visualStyle,
-                                    customPrompt: customPrompt || undefined,
-                                  })}
-                                  disabled={generateMedia.isPending}
-                                  className="w-full gap-2"
-                                >
-                                  {generateMedia.isPending ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Palette className="w-4 h-4" />
-                                  )}
-                                  Generate Media
-                                </Button>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        )}
-                      </div>
-                      {lesson.illustrations && lesson.illustrations.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {lesson.illustrations.map((illustration) => (
-                            <div key={illustration.id} className="relative group">
-                              <img
-                                src={illustration.imageUrl}
-                                alt={illustration.caption || "Lesson illustration"}
-                                className="w-full rounded-lg border"
-                              />
-                              {isOwner && (
-                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button
-                                    variant="destructive"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => deleteIllustration.mutate({ id: illustration.id })}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              )}
-                              {illustration.caption && (
-                                <p className="text-sm text-muted-foreground mt-2 text-center">
-                                  {illustration.caption}
-                                </p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 border rounded-lg bg-muted/30">
-                          <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                          <p className="text-muted-foreground">No illustrations yet</p>
-                          {isOwner && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="mt-3 gap-2"
-                              onClick={() => setMediaDialogOpen(true)}
-                            >
+                    {/* Add More Illustrations Button */}
+                    {isOwner && (
+                      <div className="flex justify-end">
+                        <Dialog open={mediaDialogOpen} onOpenChange={setMediaDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="gap-2">
                               <Plus className="w-4 h-4" />
-                              Generate Illustration
+                              Add Illustration
                             </Button>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[500px]">
+                            <DialogHeader>
+                              <DialogTitle>Generate Lesson Media</DialogTitle>
+                              <DialogDescription>
+                                Create visual content to enhance this lesson
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4 py-4">
+                              <div className="space-y-2">
+                                <Label>Media Type</Label>
+                                <Select value={mediaType} onValueChange={(v) => setMediaType(v as typeof mediaType)}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="illustration">Illustration</SelectItem>
+                                    <SelectItem value="infographic">Infographic</SelectItem>
+                                    <SelectItem value="data_visualization">Data Visualization</SelectItem>
+                                    <SelectItem value="diagram">Diagram</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Visual Style</Label>
+                                <Select value={visualStyle} onValueChange={(v) => setVisualStyle(v as typeof visualStyle)}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="minimalist">Minimalist</SelectItem>
+                                    <SelectItem value="detailed">Detailed</SelectItem>
+                                    <SelectItem value="colorful">Colorful</SelectItem>
+                                    <SelectItem value="technical">Technical</SelectItem>
+                                    <SelectItem value="modern">Modern</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Custom Prompt (Optional)</Label>
+                                <Textarea
+                                  placeholder="Describe what you want to visualize..."
+                                  value={customPrompt}
+                                  onChange={(e) => setCustomPrompt(e.target.value)}
+                                />
+                              </div>
+                              <Button
+                                onClick={() => generateMedia.mutate({
+                                  lessonId,
+                                  courseId: lesson.courseId,
+                                  mediaType,
+                                  visualStyle,
+                                  customPrompt: customPrompt || undefined,
+                                })}
+                                disabled={generateMedia.isPending}
+                                className="w-full gap-2"
+                              >
+                                {generateMedia.isPending ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Palette className="w-4 h-4" />
+                                )}
+                                Generate Media
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    )}
+
+                    {/* Generate first illustration if none exist */}
+                    {(!lesson.illustrations || lesson.illustrations.length === 0) && isOwner && (
+                      <div className="text-center py-8 border rounded-lg bg-muted/30">
+                        <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                        <p className="text-muted-foreground">No illustrations yet</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3 gap-2"
+                          onClick={() => setMediaDialogOpen(true)}
+                        >
+                          <Plus className="w-4 h-4" />
+                          Generate Illustration
+                        </Button>
+                      </div>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="notes">

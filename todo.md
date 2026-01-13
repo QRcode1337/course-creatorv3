@@ -222,3 +222,8 @@
 - [x] Show progress indicator during batch generation
 - [x] Skip lessons that already have illustrations (optional regenerate)
 - [x] Display success/failure count after completion
+
+
+## Lesson Image Layout
+- [x] Move images to top of lesson content
+- [x] Display images in full size
