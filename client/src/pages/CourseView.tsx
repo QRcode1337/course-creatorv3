@@ -102,6 +102,34 @@ export default function CourseView() {
     },
   });
 
+  const exportPdf = trpc.course.exportPdf.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob and download
+      const byteCharacters = atob(data.pdf);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success("Course PDF downloaded!");
+    },
+    onError: () => {
+      toast.error("Failed to generate PDF");
+    },
+  });
+
   // Scroll chat to bottom when new messages arrive
   useEffect(() => {
     if (chatScrollRef.current) {

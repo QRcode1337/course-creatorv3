@@ -175,6 +175,66 @@ const courseRouter = router({
       const flashcardStats = await db.getFlashcardStats(ctx.user.id, input.courseId);
       return { progress, completion, flashcardStats };
     }),
+
+  // Export course as PDF
+  exportPdf: protectedProcedure
+    .input(z.object({ courseId: z.number() }))
+    .mutation(async ({ input }) => {
+      const course = await db.getCourseById(input.courseId);
+      if (!course) throw new Error("Course not found");
+
+      // Get all chapters
+      const chapters = await db.getChaptersByCourseId(input.courseId);
+
+      // Get all lessons with illustrations for each chapter
+      const chaptersWithLessons = await Promise.all(
+        chapters.map(async (chapter) => {
+          const lessons = await db.getLessonsByChapterId(chapter.id);
+          const lessonsWithIllustrations = await Promise.all(
+            lessons.map(async (lesson) => {
+              const illustrations = await db.getIllustrationsByLessonId(lesson.id);
+              return {
+                title: lesson.title,
+                content: lesson.content || "",
+                illustrations: illustrations.map((ill) => ({
+                  url: ill.imageUrl,
+                  caption: ill.prompt || undefined,
+                })),
+              };
+            })
+          );
+          return {
+            title: chapter.title,
+            description: chapter.description || "",
+            lessons: lessonsWithIllustrations,
+          };
+        })
+      );
+
+      // Get all glossary terms for the course
+      const glossaryTerms = await db.getGlossaryTermsByCourseId(input.courseId);
+
+      // Generate PDF
+      const { generateCoursePdf } = await import("./pdfGenerator");
+      const pdfBuffer = await generateCoursePdf({
+        title: course.title,
+        description: course.description || "",
+        topic: course.topic,
+        approach: course.approach,
+        chapters: chaptersWithLessons,
+        glossaryTerms: glossaryTerms.map((term) => ({
+          term: term.term,
+          definition: term.definition || "",
+        })),
+        createdAt: course.createdAt,
+      });
+
+      // Return base64 encoded PDF
+      return {
+        pdf: pdfBuffer.toString("base64"),
+        filename: `${course.title.replace(/[^a-zA-Z0-9]/g, "_")}_Course.pdf`,
+      };
+    }),
 });
 
 // Lesson router

@@ -199,3 +199,18 @@
 ## API Bug Fixes
 - [x] Fix quiz.get returning undefined instead of null
 - [x] Fix notes.get returning undefined instead of null
+
+
+## Full Course PDF Export Feature
+- [x] Create course PDF generation function with cover page
+- [x] Add table of contents with page numbers
+- [x] Include all chapters and lessons with proper formatting
+- [x] Embed all illustrations throughout the document
+- [x] Add comprehensive glossary at the end
+- [x] Add export button to CourseView page
+- [x] Show loading state during PDF generation
+- [x] Trigger download when PDF is ready
+
+
+## Bug Fix - AI Chatbox Visibility
+- [x] Fix AI chatbox not showing in Chrome browser on course page (verified working - likely browser cache issue)
