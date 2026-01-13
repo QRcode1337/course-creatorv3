@@ -164,3 +164,17 @@
 - [x] Context-aware responses based on lesson content
 - [x] Save AI responses to notes functionality
 - [x] Chat history within lesson session
+
+
+## Lesson Content Formatting
+- [x] Update AI prompts to generate well-structured content
+- [x] Use headers (##, ###) to organize sections
+- [x] Include bulleted and numbered lists where appropriate
+- [x] Add clear section breaks between topics
+- [x] Avoid dense paragraphs - break into digestible chunks
+
+## AI Chatbox Enhancements
+- [x] Move AI chatbox to right side of lesson content
+- [x] Add suggestion buttons (explain simply, give examples, quiz me, etc.)
+- [x] Improve chat layout and styling
+- [x] Make suggestions contextual to lesson content

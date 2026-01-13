@@ -10,11 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
-import { AIChatBox, Message } from "@/components/AIChatBox";
 import { trpc } from "@/lib/trpc";
 import { Link, useParams, useLocation } from "wouter";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 import {
@@ -23,10 +23,11 @@ import {
   BookOpen,
   Check,
   CheckCircle2,
-  ChevronLeft,
   ChevronRight,
+  HelpCircle,
   Image as ImageIcon,
   Layers,
+  Lightbulb,
   Loader2,
   MessageCircle,
   NotebookPen,
@@ -34,10 +35,17 @@ import {
   Plus,
   RefreshCw,
   Save,
+  Send,
   Sparkles,
   Trash2,
   X,
+  Zap,
 } from "lucide-react";
+
+interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
 
 export default function LessonView() {
   const { id } = useParams<{ id: string }>();
@@ -61,8 +69,9 @@ export default function LessonView() {
   const [customPrompt, setCustomPrompt] = useState("");
 
   // AI Chat state
-  const [chatMessages, setChatMessages] = useState<Message[]>([]);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   const { data: lesson, isLoading, refetch: refetchLesson } = trpc.lesson.get.useQuery(
     { id: lessonId },
@@ -98,18 +107,21 @@ export default function LessonView() {
   useEffect(() => {
     if (userNote?.content) {
       setNotes(userNote.content);
+      setNotesSaved(true);
     }
   }, [userNote]);
 
-  const markComplete = trpc.lesson.markComplete.useMutation({
-    onSuccess: () => {
-      toast.success("Lesson marked as complete!");
-    },
-  });
+  // Scroll chat to bottom when new messages arrive
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
 
   const saveNotes = trpc.notes.save.useMutation({
     onSuccess: () => {
       setNotesSaved(true);
+      toast.success("Notes saved");
     },
   });
 
@@ -117,130 +129,135 @@ export default function LessonView() {
     onSuccess: () => {
       toast.success("Quiz generated!");
     },
-    onError: (error) => {
-      toast.error(error.message || "Failed to generate quiz");
-    },
   });
 
   const submitQuiz = trpc.quiz.submit.useMutation({
     onSuccess: (data) => {
       setQuizSubmitted(true);
       setQuizFeedback(data.feedback);
-      toast.success(`Quiz completed! Score: ${Math.round(data.score)}%`);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to submit quiz");
+      toast.success(`Quiz submitted! Score: ${Math.round(data.score)}%`);
     },
   });
 
   const generateFlashcards = trpc.flashcard.generate.useMutation({
-    onSuccess: (data) => {
-      toast.success(`Generated ${data.count} flashcards`);
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to generate flashcards");
+    onSuccess: () => {
+      toast.success("Flashcards generated!");
     },
   });
 
-  const generateMedia = trpc.illustration.generate.useMutation({
+  const markComplete = trpc.lesson.markComplete.useMutation({
     onSuccess: () => {
-      toast.success("Media generated!");
-      setMediaDialogOpen(false);
-      refetchLesson();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to generate media");
-    },
-  });
-
-  const deleteIllustration = trpc.illustration.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Illustration deleted");
-      refetchLesson();
+      toast.success("Lesson marked as complete!");
     },
   });
 
   const regenerateLesson = trpc.lesson.regenerate.useMutation({
     onSuccess: () => {
-      toast.success("Lesson content regenerated!");
       refetchLesson();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to regenerate lesson");
+      toast.success("Lesson regenerated!");
     },
   });
 
-  // AI Chat mutation
+  const generateMedia = trpc.illustration.generate.useMutation({
+    onSuccess: () => {
+      refetchLesson();
+      setMediaDialogOpen(false);
+      toast.success("Media generated!");
+    },
+  });
+
+  const deleteIllustration = trpc.illustration.delete.useMutation({
+    onSuccess: () => {
+      refetchLesson();
+      toast.success("Illustration deleted");
+    },
+  });
+
   const aiChat = trpc.aiChat.chat.useMutation({
     onSuccess: (data) => {
       setChatMessages(prev => [...prev, { role: "assistant", content: data.response }]);
     },
-    onError: (error) => {
-      toast.error(error.message || "Failed to get AI response");
+    onError: () => {
+      toast.error("Failed to get response");
     },
   });
 
-  // Handle sending chat message
-  const handleSendChatMessage = useCallback((content: string) => {
-    const newMessages: Message[] = [...chatMessages, { role: "user", content }];
-    setChatMessages(newMessages);
-    aiChat.mutate({
-      lessonId,
-      messages: newMessages,
-    });
-  }, [chatMessages, lessonId, aiChat]);
-
-  // Save AI response to notes
-  const handleSaveToNotes = useCallback((content: string) => {
-    const newNotes = notes ? `${notes}\n\n---\n\n**AI Explanation:**\n${content}` : `**AI Explanation:**\n${content}`;
-    setNotes(newNotes);
-    setNotesSaved(false);
-    if (user && lesson) {
-      saveNotes.mutate({
-        lessonId,
-        courseId: lesson.courseId,
-        content: newNotes,
-      });
-    }
-    toast.success("Saved to notes!");
-  }, [notes, user, lesson, lessonId, saveNotes]);
-
   // Auto-save notes
+  useEffect(() => {
+    if (!notesSaved && notes && user) {
+      const timer = setTimeout(() => {
+        saveNotes.mutate({ lessonId, courseId: lesson?.courseId || 0, content: notes });
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [notes, notesSaved, lessonId, user]);
+
   const handleNotesChange = useCallback((value: string) => {
     setNotes(value);
     setNotesSaved(false);
   }, []);
 
-  useEffect(() => {
-    if (!notesSaved && user && lesson) {
-      const timer = setTimeout(() => {
-        saveNotes.mutate({
-          lessonId,
-          courseId: lesson.courseId,
-          content: notes,
-        });
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [notes, notesSaved, user, lesson, lessonId]);
+  const handleSendChatMessage = useCallback((message: string) => {
+    if (!message.trim() || !lesson) return;
+    
+    const newMessages: ChatMessage[] = [...chatMessages, { role: "user", content: message }];
+    setChatMessages(newMessages);
+    setChatInput("");
+    
+    aiChat.mutate({
+      lessonId,
+      messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+    });
+  }, [chatMessages, lessonId, lesson, aiChat]);
 
-  // Find current lesson position
-  const currentChapter = course?.chapters.find(ch => ch.id === lesson?.chapterId);
-  const currentLessonIndex = currentChapter?.lessons.findIndex(l => l.id === lessonId) ?? -1;
-  
-  // Find previous and next lessons
-  const allLessons = course?.chapters.flatMap(ch => ch.lessons) || [];
+  const handleSaveToNotes = useCallback((content: string) => {
+    const newNotes = notes ? `${notes}\n\n---\n\n**AI Tutor Response:**\n${content}` : `**AI Tutor Response:**\n${content}`;
+    setNotes(newNotes);
+    setNotesSaved(false);
+    setActiveTab("notes");
+    toast.success("Response added to notes");
+  }, [notes]);
+
+  // Suggestion buttons for AI chat
+  const chatSuggestions = [
+    { icon: Lightbulb, label: "Explain simply", prompt: "Explain this lesson in simpler terms, as if I'm a complete beginner." },
+    { icon: Zap, label: "Give examples", prompt: "Give me 3 real-world examples that illustrate the main concepts in this lesson." },
+    { icon: HelpCircle, label: "Quiz me", prompt: "Create 3 quick questions to test my understanding of this lesson." },
+    { icon: BookOpen, label: "Summarize", prompt: "Summarize the key points of this lesson in bullet points." },
+  ];
+
+  // Find current chapter and lesson index
+  const currentChapter = useMemo(() => {
+    if (!course?.chapters || !lesson) return null;
+    return course.chapters.find(ch => ch.id === lesson.chapterId);
+  }, [course, lesson]);
+
+  const currentLessonIndex = useMemo(() => {
+    if (!currentChapter) return 0;
+    return currentChapter.lessons.findIndex(l => l.id === lessonId);
+  }, [currentChapter, lessonId]);
+
+  // Navigation
+  const allLessons = useMemo(() => {
+    if (!course?.chapters) return [];
+    return course.chapters.flatMap(ch => ch.lessons);
+  }, [course]);
+
   const currentGlobalIndex = allLessons.findIndex(l => l.id === lessonId);
   const prevLesson = currentGlobalIndex > 0 ? allLessons[currentGlobalIndex - 1] : null;
   const nextLesson = currentGlobalIndex < allLessons.length - 1 ? allLessons[currentGlobalIndex + 1] : null;
 
-  const lessonFlashcardCount = flashcards?.filter(f => f.lessonId === lessonId).length || 0;
+  // Flashcard count for this lesson
+  const lessonFlashcardCount = useMemo(() => {
+    if (!flashcards) return 0;
+    return flashcards.filter(f => f.lessonId === lessonId).length;
+  }, [flashcards, lessonId]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="flex items-center justify-center py-24">
+        <div className="container py-24 flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       </div>
@@ -279,9 +296,9 @@ export default function LessonView() {
           <span className="text-foreground">{lesson.title}</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main content */}
-          <div className="lg:col-span-3">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Main content - Left side */}
+          <div className="xl:col-span-2">
             <Card>
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -330,10 +347,6 @@ export default function LessonView() {
                           {Math.round(quizResults[0].score)}%
                         </Badge>
                       )}
-                    </TabsTrigger>
-                    <TabsTrigger value="chat" className="gap-2">
-                      <MessageCircle className="w-4 h-4" />
-                      AI Tutor
                     </TabsTrigger>
                   </TabsList>
 
@@ -439,16 +452,15 @@ export default function LessonView() {
                                   {generateMedia.isPending ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                   ) : (
-                                    <Sparkles className="w-4 h-4" />
+                                    <Palette className="w-4 h-4" />
                                   )}
-                                  Generate
+                                  Generate Media
                                 </Button>
                               </div>
                             </DialogContent>
                           </Dialog>
                         )}
                       </div>
-                      
                       {lesson.illustrations && lesson.illustrations.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {lesson.illustrations.map((illustration) => (
@@ -475,21 +487,19 @@ export default function LessonView() {
                                   {illustration.caption}
                                 </p>
                               )}
-                              <Badge variant="secondary" className="absolute bottom-2 left-2">
-                                {illustration.mediaType.replace("_", " ")}
-                              </Badge>
                             </div>
                           ))}
                         </div>
                       ) : (
                         <div className="text-center py-8 border rounded-lg bg-muted/30">
                           <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                          <p className="text-muted-foreground mb-3">No illustrations yet</p>
+                          <p className="text-muted-foreground">No illustrations yet</p>
                           {isOwner && (
                             <Button
                               variant="outline"
+                              size="sm"
+                              className="mt-3 gap-2"
                               onClick={() => setMediaDialogOpen(true)}
-                              className="gap-2"
                             >
                               <Plus className="w-4 h-4" />
                               Generate Illustration
@@ -503,46 +513,47 @@ export default function LessonView() {
                   <TabsContent value="notes">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">
-                          Your notes are automatically saved
-                        </p>
+                        <div>
+                          <h3 className="font-semibold">Your Notes</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Notes auto-save as you type
+                          </p>
+                        </div>
                         {!notesSaved && (
                           <Badge variant="outline" className="gap-1">
                             <Loader2 className="w-3 h-3 animate-spin" />
                             Saving...
                           </Badge>
                         )}
-                        {notesSaved && notes && (
-                          <Badge variant="outline" className="gap-1 text-green-600">
-                            <Check className="w-3 h-3" />
-                            Saved
-                          </Badge>
-                        )}
                       </div>
-                      <Textarea
-                        placeholder="Write your notes here..."
-                        value={notes}
-                        onChange={(e) => handleNotesChange(e.target.value)}
-                        className="min-h-[400px] resize-none"
-                        disabled={!user}
-                      />
-                      {!user && (
-                        <p className="text-sm text-muted-foreground">
-                          Sign in to save notes
-                        </p>
+                      {user ? (
+                        <Textarea
+                          placeholder="Take notes on this lesson..."
+                          value={notes}
+                          onChange={(e) => handleNotesChange(e.target.value)}
+                          className="min-h-[400px] resize-none"
+                        />
+                      ) : (
+                        <div className="text-center py-12 border rounded-lg bg-muted/30">
+                          <NotebookPen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-semibold mb-2">Sign in to take notes</h3>
+                          <p className="text-muted-foreground">
+                            Your notes will be saved and synced across devices
+                          </p>
+                        </div>
                       )}
                     </div>
                   </TabsContent>
 
                   <TabsContent value="quiz">
                     {!quiz ? (
-                      <div className="text-center py-12">
+                      <div className="text-center py-12 border rounded-lg bg-muted/30">
                         <Sparkles className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                        <h3 className="text-lg font-semibold mb-2">No Quiz Yet</h3>
+                        <h3 className="text-lg font-semibold mb-2">No quiz yet</h3>
                         <p className="text-muted-foreground mb-4">
-                          Generate an AI-powered quiz to test your understanding
+                          Generate a quiz to test your understanding
                         </p>
-                        {user && isOwner && (
+                        {isOwner && (
                           <Button
                             onClick={() => generateQuiz.mutate({ lessonId, courseId: lesson.courseId })}
                             disabled={generateQuiz.isPending}
@@ -648,60 +659,6 @@ export default function LessonView() {
                       </div>
                     )}
                   </TabsContent>
-
-                  <TabsContent value="chat">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold">AI Tutor</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Ask questions about this lesson and get instant explanations
-                          </p>
-                        </div>
-                        {chatMessages.filter(m => m.role === "assistant").length > 0 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const lastAssistantMessage = [...chatMessages].reverse().find(m => m.role === "assistant");
-                              if (lastAssistantMessage) {
-                                handleSaveToNotes(lastAssistantMessage.content);
-                              }
-                            }}
-                            className="gap-2"
-                          >
-                            <Save className="w-4 h-4" />
-                            Save Last Response to Notes
-                          </Button>
-                        )}
-                      </div>
-                      
-                      {user ? (
-                        <AIChatBox
-                          messages={chatMessages}
-                          onSendMessage={handleSendChatMessage}
-                          isLoading={aiChat.isPending}
-                          placeholder="Ask a question about this lesson..."
-                          height="450px"
-                          emptyStateMessage="Ask me anything about this lesson!"
-                          suggestedPrompts={[
-                            "Explain the main concepts",
-                            "Give me a real-world example",
-                            "What are the key takeaways?",
-                            "Help me understand this better"
-                          ]}
-                        />
-                      ) : (
-                        <div className="text-center py-12 border rounded-lg bg-muted/30">
-                          <MessageCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                          <h3 className="text-lg font-semibold mb-2">Sign in to use AI Tutor</h3>
-                          <p className="text-muted-foreground">
-                            Get personalized explanations and answers to your questions
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </TabsContent>
                 </Tabs>
               </CardContent>
             </Card>
@@ -750,12 +707,137 @@ export default function LessonView() {
             </div>
           </div>
 
-          {/* Sidebar */}
+          {/* Right Sidebar - AI Tutor Chat */}
           <div className="space-y-6">
+            {/* AI Tutor Card */}
+            <Card className="sticky top-24">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-primary" />
+                  AI Tutor
+                </CardTitle>
+                <CardDescription>
+                  Ask questions about this lesson
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {user ? (
+                  <>
+                    {/* Suggestion buttons */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {chatSuggestions.map((suggestion, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          className="h-auto py-2 px-3 justify-start gap-2 text-left"
+                          onClick={() => handleSendChatMessage(suggestion.prompt)}
+                          disabled={aiChat.isPending}
+                        >
+                          <suggestion.icon className="w-4 h-4 shrink-0 text-primary" />
+                          <span className="text-xs">{suggestion.label}</span>
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Chat messages */}
+                    <ScrollArea className="h-[350px] pr-4" ref={chatScrollRef}>
+                      <div className="space-y-4">
+                        {chatMessages.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                            <p className="text-sm">Click a suggestion or ask your own question!</p>
+                          </div>
+                        ) : (
+                          chatMessages.map((message, index) => (
+                            <div
+                              key={index}
+                              className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                            >
+                              <div
+                                className={`max-w-[90%] rounded-lg px-3 py-2 text-sm ${
+                                  message.role === "user"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted"
+                                }`}
+                              >
+                                {message.role === "assistant" ? (
+                                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                                    <Streamdown>{message.content}</Streamdown>
+                                  </div>
+                                ) : (
+                                  message.content
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                        {aiChat.isPending && (
+                          <div className="flex justify-start">
+                            <div className="bg-muted rounded-lg px-3 py-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+
+                    {/* Save to notes button */}
+                    {chatMessages.filter(m => m.role === "assistant").length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const lastAssistantMessage = [...chatMessages].reverse().find(m => m.role === "assistant");
+                          if (lastAssistantMessage) {
+                            handleSaveToNotes(lastAssistantMessage.content);
+                          }
+                        }}
+                        className="w-full gap-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <Save className="w-4 h-4" />
+                        Save last response to notes
+                      </Button>
+                    )}
+
+                    {/* Chat input */}
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Ask a question..."
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendChatMessage(chatInput);
+                          }
+                        }}
+                        disabled={aiChat.isPending}
+                      />
+                      <Button
+                        size="icon"
+                        onClick={() => handleSendChatMessage(chatInput)}
+                        disabled={aiChat.isPending || !chatInput.trim()}
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <MessageCircle className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Sign in to chat with AI Tutor
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Flashcards */}
             {user && (
               <Card>
-                <CardHeader>
+                <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Layers className="w-5 h-5" />
                     Flashcards
@@ -795,7 +877,7 @@ export default function LessonView() {
             {/* Chapter Lessons */}
             {currentChapter && (
               <Card>
-                <CardHeader>
+                <CardHeader className="pb-3">
                   <CardTitle className="text-lg">{currentChapter.title}</CardTitle>
                   <CardDescription>
                     {currentChapter.lessons.length} lessons

@@ -78,10 +78,22 @@ export async function generateCourseStructure(
 
 Your educational philosophy:
 - Write detailed educational content in markdown format
+- NEVER write dense walls of text - break content into clear sections
+- Use headers (## and ###) to organize major topics and subtopics
+- Use bullet points and numbered lists liberally for clarity
+- Keep paragraphs short (2-4 sentences max)
 - Provide clear explanations appropriate for the specified depth level
 - Include key concepts with thorough explanations
 - Add examples and practical applications to reinforce learning
 - Conclude with important takeaways that summarize key points
+
+CRITICAL FORMATTING RULES:
+1. Every lesson MUST have multiple ## headers to organize content
+2. Use ### for subtopics within sections
+3. Use bullet points (-) for lists of related items
+4. Use numbered lists (1. 2. 3.) for sequential steps or ranked items
+5. Use > blockquotes for important definitions or key insights
+6. Add blank lines between sections for readability
 
 CRITICAL GUIDELINES for key terms:
 1. When introducing key technical terms, concepts, or important vocabulary for the first time, make them **bold** using markdown
@@ -102,35 +114,45 @@ Structure Requirements:
 - Number of chapters: ${lengthConfig.minChapters} to ${lengthConfig.maxChapters}
 - Lessons per chapter: ${lessonsConfig.min} to ${lessonsConfig.max}
 
-For each lesson, write detailed educational content that includes:
+For each lesson, write detailed educational content with this EXACT structure:
 
-1. **Clear Explanations** (appropriate for ${contentDepth} level):
-   - Start with an engaging introduction that hooks the reader
-   - Break down complex concepts into digestible parts
-   - Use appropriate language for the target audience
+## Introduction
+- Start with 1-2 sentences that hook the reader
+- Briefly preview what the lesson covers
 
-2. **Key Concepts** (5-8 per lesson):
-   - Introduce important terms in **bold** the FIRST time they appear
-   - These bold terms become interactive glossary items
-   - Choose significant concepts worth studying separately
-   - Provide context and thorough explanations for each term
+## [Main Topic 1]
+### [Subtopic if needed]
+- Use bullet points to list key points
+- Keep explanations concise and clear
+- Include a real-world example
 
-3. **Examples and Practical Applications**:
-   - Include real-world examples that illustrate concepts
-   - Add practical exercises or thought experiments
-   - Show how concepts apply in different contexts
-   - Use analogies to connect new ideas to familiar ones
+## [Main Topic 2]
+- Continue with organized sections
+- Use numbered lists for steps or processes:
+  1. First step
+  2. Second step
+  3. Third step
 
-4. **Important Takeaways**:
-   - End each lesson with a summary of key points
-   - Highlight the most critical information to remember
-   - Connect the lesson to broader course themes
+## Practical Applications
+- How this applies in the real world
+- Exercises or thought experiments
+- Connections to other concepts
 
-5. **Markdown Formatting**:
-   - Use headers (##, ###) to organize sections
-   - Use bullet points and numbered lists for clarity
-   - Use *italics* for emphasis and **bold** for key terms
-   - Use code blocks where appropriate (for technical content)
+## Key Takeaways
+- Bullet point summary of main ideas
+- Most important things to remember
+- Connection to next lesson or broader themes
+
+FORMATTING REQUIREMENTS:
+1. MUST use ## headers to organize every lesson into 4-6 sections
+2. MUST use bullet points (-) for lists of related items
+3. MUST use numbered lists for sequential steps
+4. Keep paragraphs SHORT (2-4 sentences maximum)
+5. Use > blockquotes for important definitions
+6. Use **bold** for 5-8 key terms (first occurrence only)
+7. Use *italics* for emphasis
+8. Add blank lines between sections
+9. NEVER write long paragraphs - break them up with lists and headers
 
 Also generate related topics:
 - 2-3 parent topics (foundational prerequisites)
@@ -412,7 +434,18 @@ export async function regenerateLesson(
   approach: "balanced" | "rigorous" | "easy",
   contentDepth: "introductory" | "intermediate" | "advanced"
 ): Promise<{ content: string; keyTerms: { term: string; definition: string }[] }> {
-  const systemPrompt = `You are an expert curriculum designer. Create comprehensive lesson content.
+  const systemPrompt = `You are an expert curriculum designer. Create comprehensive, well-structured lesson content.
+
+FORMATTING RULES:
+- NEVER write dense walls of text
+- Use ## headers to organize content into 4-6 sections
+- Use ### for subtopics
+- Use bullet points (-) for lists of related items
+- Use numbered lists for sequential steps
+- Keep paragraphs SHORT (2-4 sentences max)
+- Use > blockquotes for important definitions
+- Add blank lines between sections
+
 Always respond with valid JSON.`;
 
   const userPrompt = `Create lesson content for:
@@ -423,14 +456,42 @@ Lesson: ${lessonTitle}
 Approach: ${approachDescriptions[approach]}
 Content Depth: ${contentDepthDescriptions[contentDepth]}
 
-Requirements:
-- Write comprehensive content (500-1000 words)
-- Include exactly 5-8 key terms in **bold** format
+STRUCTURE YOUR CONTENT LIKE THIS:
+
+## Introduction
+- Hook the reader with 1-2 engaging sentences
+- Preview what the lesson covers
+
+## [Main Topic]
+- Use bullet points for key points
+- Keep explanations clear and concise
+- Include real-world examples
+
+## [Another Topic]
+- Continue with organized sections
+- Use numbered lists for steps:
+  1. First step
+  2. Second step
+
+## Practical Applications
+- Real-world uses
+- Exercises or examples
+
+## Key Takeaways
+- Summary bullet points
+- Most important concepts
+
+REQUIREMENTS:
+- Write 500-1000 words
+- MUST use ## headers for 4-6 sections
+- MUST use bullet points and numbered lists
+- Keep paragraphs SHORT (2-4 sentences)
+- Include exactly 5-8 key terms in **bold** (first occurrence only)
 - Extract those key terms with definitions
 
 Respond with JSON:
 {
-  "content": "Full lesson content with **bold key terms**...",
+  "content": "## Introduction\n- Hook...\n\n## Topic...\n\n## Key Takeaways\n- ...",
   "keyTerms": [
     { "term": "Key Term", "definition": "Definition" }
   ]
@@ -604,10 +665,22 @@ export async function generateCourseFromDocument(
 
 Your educational philosophy:
 - Write detailed educational content in markdown format
+- NEVER write dense walls of text - break content into clear sections
+- Use headers (## and ###) to organize major topics and subtopics
+- Use bullet points and numbered lists liberally for clarity
+- Keep paragraphs short (2-4 sentences max)
 - Provide clear explanations appropriate for the specified depth level
 - Include key concepts with thorough explanations
 - Add examples and practical applications to reinforce learning
 - Conclude with important takeaways that summarize key points
+
+CRITICAL FORMATTING RULES:
+1. Every lesson MUST have multiple ## headers to organize content
+2. Use ### for subtopics within sections
+3. Use bullet points (-) for lists of related items
+4. Use numbered lists (1. 2. 3.) for sequential steps or ranked items
+5. Use > blockquotes for important definitions or key insights
+6. Add blank lines between sections for readability
 
 CRITICAL GUIDELINES for key terms:
 1. When introducing key technical terms, concepts, or important vocabulary for the first time, make them **bold** using markdown
@@ -635,36 +708,45 @@ Structure Requirements:
 - Number of chapters: ${lengthConfig.minChapters} to ${lengthConfig.maxChapters}
 - Lessons per chapter: ${lessonsConfig.min} to ${lessonsConfig.max}
 
-For each lesson, write detailed educational content that includes:
+For each lesson, write detailed educational content with this EXACT structure:
 
-1. **Clear Explanations** (appropriate for ${contentDepth} level):
-   - Start with an engaging introduction that hooks the reader
-   - Break down complex concepts from the document into digestible parts
-   - Use appropriate language for the target audience
-   - Expand on the source material with additional context
+## Introduction
+- Start with 1-2 sentences that hook the reader
+- Briefly preview what the lesson covers
 
-2. **Key Concepts** (5-8 per lesson):
-   - Introduce important terms in **bold** the FIRST time they appear
-   - These bold terms become interactive glossary items
-   - Choose significant concepts worth studying separately
-   - Provide context and thorough explanations for each term
+## [Main Topic 1]
+### [Subtopic if needed]
+- Use bullet points to list key points
+- Keep explanations concise and clear
+- Include a real-world example
 
-3. **Examples and Practical Applications**:
-   - Include real-world examples that illustrate concepts
-   - Add practical exercises or thought experiments
-   - Show how concepts apply in different contexts
-   - Use analogies to connect new ideas to familiar ones
+## [Main Topic 2]
+- Continue with organized sections
+- Use numbered lists for steps or processes:
+  1. First step
+  2. Second step
+  3. Third step
 
-4. **Important Takeaways**:
-   - End each lesson with a summary of key points
-   - Highlight the most critical information to remember
-   - Connect the lesson to broader course themes
+## Practical Applications
+- How this applies in the real world
+- Exercises or thought experiments
+- Connections to other concepts
 
-5. **Markdown Formatting**:
-   - Use headers (##, ###) to organize sections
-   - Use bullet points and numbered lists for clarity
-   - Use *italics* for emphasis and **bold** for key terms
-   - Use code blocks where appropriate (for technical content)
+## Key Takeaways
+- Bullet point summary of main ideas
+- Most important things to remember
+- Connection to next lesson or broader themes
+
+FORMATTING REQUIREMENTS:
+1. MUST use ## headers to organize every lesson into 4-6 sections
+2. MUST use bullet points (-) for lists of related items
+3. MUST use numbered lists for sequential steps
+4. Keep paragraphs SHORT (2-4 sentences maximum)
+5. Use > blockquotes for important definitions
+6. Use **bold** for 5-8 key terms (first occurrence only)
+7. Use *italics* for emphasis
+8. Add blank lines between sections
+9. NEVER write long paragraphs - break them up with lists and headers
 
 Also generate related topics:
 - 2-3 parent topics (foundational prerequisites)
