@@ -565,3 +565,28 @@ describe("Lesson PDF Export", () => {
     expect(typeof result.pdf).toBe("string");
   });
 });
+
+
+describe("Batch Image Generation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("generates illustrations for all lessons in a course", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.illustration.generateAll({
+      courseId: 1,
+      mediaType: "illustration",
+      visualStyle: "modern",
+      skipExisting: true,
+    });
+
+    expect(result.success).toBe(true);
+    expect(result).toHaveProperty("total");
+    expect(result).toHaveProperty("generated");
+    expect(result).toHaveProperty("skipped");
+    expect(result).toHaveProperty("failed");
+  });
+});

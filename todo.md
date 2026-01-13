@@ -214,3 +214,11 @@
 
 ## Bug Fix - AI Chatbox Visibility
 - [x] Fix AI chatbox not showing in Chrome browser on course page (verified working - likely browser cache issue)
+
+
+## Batch Image Generation Feature
+- [x] Create backend endpoint for batch illustration generation
+- [x] Add "Generate All Images" button to CourseView page
+- [x] Show progress indicator during batch generation
+- [x] Skip lessons that already have illustrations (optional regenerate)
+- [x] Display success/failure count after completion

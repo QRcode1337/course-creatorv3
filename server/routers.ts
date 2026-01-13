@@ -739,6 +739,91 @@ const illustrationRouter = router({
       await db.deleteIllustration(input.id);
       return { success: true };
     }),
+
+  // Generate illustrations for all lessons in a course
+  generateAll: protectedProcedure
+    .input(z.object({
+      courseId: z.number(),
+      mediaType: z.enum(["illustration", "infographic", "data_visualization", "diagram"]).default("illustration"),
+      visualStyle: z.enum(["minimalist", "detailed", "colorful", "technical", "modern"]).default("modern"),
+      skipExisting: z.boolean().default(true),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const course = await db.getCourseById(input.courseId);
+      if (!course || course.userId !== ctx.user.id) {
+        throw new Error("Course not found or unauthorized");
+      }
+
+      // Get all chapters and lessons
+      const chapters = await db.getChaptersByCourseId(input.courseId);
+      const allLessons: { id: number; title: string; content: string | null }[] = [];
+      
+      for (const chapter of chapters) {
+        const lessons = await db.getLessonsByChapterId(chapter.id);
+        allLessons.push(...lessons);
+      }
+
+      let generated = 0;
+      let skipped = 0;
+      let failed = 0;
+      const results: { lessonId: number; lessonTitle: string; success: boolean; imageUrl?: string; error?: string }[] = [];
+
+      for (const lesson of allLessons) {
+        // Check if lesson already has illustrations
+        if (input.skipExisting) {
+          const existingIllustrations = await db.getIllustrationsByLessonId(lesson.id);
+          if (existingIllustrations.length > 0) {
+            skipped++;
+            results.push({ lessonId: lesson.id, lessonTitle: lesson.title, success: true, imageUrl: existingIllustrations[0].imageUrl });
+            continue;
+          }
+        }
+
+        try {
+          const result = await ai.generateLessonMedia(
+            lesson.title,
+            lesson.content || "",
+            input.mediaType,
+            input.visualStyle
+          );
+
+          // Get current max order index
+          const existingIllustrations = await db.getIllustrationsByLessonId(lesson.id);
+          const maxOrder = existingIllustrations.length > 0 
+            ? Math.max(...existingIllustrations.map(i => i.orderIndex))
+            : -1;
+
+          await db.createIllustration({
+            lessonId: lesson.id,
+            courseId: input.courseId,
+            imageUrl: result.url,
+            mediaType: input.mediaType,
+            visualStyle: input.visualStyle,
+            orderIndex: maxOrder + 1,
+          });
+
+          generated++;
+          results.push({ lessonId: lesson.id, lessonTitle: lesson.title, success: true, imageUrl: result.url });
+        } catch (error) {
+          failed++;
+          results.push({ 
+            lessonId: lesson.id, 
+            lessonTitle: lesson.title, 
+            success: false, 
+            error: error instanceof Error ? error.message : "Unknown error" 
+          });
+        }
+      }
+
+      return {
+        success: true,
+        total: allLessons.length,
+        generated,
+        skipped,
+        failed,
+        results,
+      };
+    }),
 });
 
 // Notes router

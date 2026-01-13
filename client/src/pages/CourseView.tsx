@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Download,
   HelpCircle,
+  Image,
   Layers,
   Lightbulb,
   Loader2,
@@ -127,6 +128,17 @@ export default function CourseView() {
     },
     onError: () => {
       toast.error("Failed to generate PDF");
+    },
+  });
+
+  const generateAllImages = trpc.illustration.generateAll.useMutation({
+    onSuccess: (data) => {
+      toast.success(
+        `Generated ${data.generated} images, skipped ${data.skipped}, failed ${data.failed}`
+      );
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to generate images");
     },
   });
 
@@ -472,9 +484,31 @@ export default function CourseView() {
                       )}
                     </Button>
                   </Link>
-                  <Button variant="outline" className="w-full gap-2" disabled>
-                    <Download className="w-4 h-4" />
-                    Export PDF
+                  <Button 
+                    variant="outline" 
+                    className="w-full gap-2" 
+                    onClick={() => generateAllImages.mutate({ courseId })}
+                    disabled={generateAllImages.isPending}
+                  >
+                    {generateAllImages.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Image className="w-4 h-4" />
+                    )}
+                    {generateAllImages.isPending ? "Generating Images..." : "Generate All Images"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full gap-2" 
+                    onClick={() => exportPdf.mutate({ courseId })}
+                    disabled={exportPdf.isPending}
+                  >
+                    {exportPdf.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4" />
+                    )}
+                    {exportPdf.isPending ? "Generating PDF..." : "Export PDF"}
                   </Button>
                 </CardContent>
               </Card>
