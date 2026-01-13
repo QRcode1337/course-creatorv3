@@ -142,3 +142,11 @@
 - [x] Preview extracted content before course generation
 - [x] Support for multiple document upload to create comprehensive courses
 - [x] Document management (view, delete uploaded documents)
+
+
+## AI Prompt Enhancements
+- [x] Update course generation prompts with detailed content guidelines
+- [x] Add clear instructions for bold key terms (5-8 per lesson)
+- [x] Include examples and practical applications in prompts
+- [x] Add important takeaways section guidance
+- [x] Improve markdown formatting instructions

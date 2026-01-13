@@ -74,8 +74,22 @@ export async function generateCourseStructure(
   const lengthConfig = courseLengthConfig[courseLength];
   const lessonsConfig = lessonsPerChapterConfig[lessonsPerChapter];
   
-  const systemPrompt = `You are an expert curriculum designer and educator. Create comprehensive, well-structured educational courses.
-Your courses should be engaging, informative, and pedagogically sound.
+  const systemPrompt = `You are an expert educational content creator and curriculum designer. You create comprehensive, well-structured course outlines that transform learners.
+
+Your educational philosophy:
+- Write detailed educational content in markdown format
+- Provide clear explanations appropriate for the specified depth level
+- Include key concepts with thorough explanations
+- Add examples and practical applications to reinforce learning
+- Conclude with important takeaways that summarize key points
+
+CRITICAL GUIDELINES for key terms:
+1. When introducing key technical terms, concepts, or important vocabulary for the first time, make them **bold** using markdown
+2. These bold terms will become interactive glossary items with definitions
+3. Choose exactly 5-8 of the most important terms to bold per lesson
+4. Bold terms should be significant concepts worth studying separately
+5. Only bold a term the FIRST time it appears in a lesson
+
 Always respond with valid JSON matching the exact schema provided.`;
 
   const userPrompt = `Create a complete course on "${topic}".
@@ -88,14 +102,39 @@ Structure Requirements:
 - Number of chapters: ${lengthConfig.minChapters} to ${lengthConfig.maxChapters}
 - Lessons per chapter: ${lessonsConfig.min} to ${lessonsConfig.max}
 
-For each lesson:
-- Write comprehensive content (500-1000 words)
-- Include exactly 5-8 key terms in **bold** format within the content
-- Extract those key terms with their definitions
+For each lesson, write detailed educational content that includes:
+
+1. **Clear Explanations** (appropriate for ${contentDepth} level):
+   - Start with an engaging introduction that hooks the reader
+   - Break down complex concepts into digestible parts
+   - Use appropriate language for the target audience
+
+2. **Key Concepts** (5-8 per lesson):
+   - Introduce important terms in **bold** the FIRST time they appear
+   - These bold terms become interactive glossary items
+   - Choose significant concepts worth studying separately
+   - Provide context and thorough explanations for each term
+
+3. **Examples and Practical Applications**:
+   - Include real-world examples that illustrate concepts
+   - Add practical exercises or thought experiments
+   - Show how concepts apply in different contexts
+   - Use analogies to connect new ideas to familiar ones
+
+4. **Important Takeaways**:
+   - End each lesson with a summary of key points
+   - Highlight the most critical information to remember
+   - Connect the lesson to broader course themes
+
+5. **Markdown Formatting**:
+   - Use headers (##, ###) to organize sections
+   - Use bullet points and numbered lists for clarity
+   - Use *italics* for emphasis and **bold** for key terms
+   - Use code blocks where appropriate (for technical content)
 
 Also generate related topics:
 - 2-3 parent topics (foundational prerequisites)
-- 2-3 child topics (advanced specializations)
+- 2-3 child topics (advanced specializations)  
 - 2-3 sibling topics (parallel domains)
 
 Respond with a JSON object matching this exact structure:
@@ -109,9 +148,9 @@ Respond with a JSON object matching this exact structure:
       "lessons": [
         {
           "title": "Lesson Title",
-          "content": "Full lesson content with **bold key terms**...",
+          "content": "Full lesson content (500-1000 words) with **bold key terms**, examples, and takeaways...",
           "keyTerms": [
-            { "term": "Key Term", "definition": "Definition of the term" }
+            { "term": "Key Term", "definition": "Clear, concise definition of the term" }
           ]
         }
       ]
@@ -561,9 +600,22 @@ export async function generateCourseFromDocument(
     ? documentContent.substring(0, 50000) + "\n\n[Content truncated...]"
     : documentContent;
   
-  const systemPrompt = `You are an expert curriculum designer and educator. 
-Your task is to analyze provided document content and transform it into a well-structured educational course.
-Extract the key concepts, organize them logically, and create comprehensive lessons.
+  const systemPrompt = `You are an expert educational content creator and curriculum designer. You transform source documents into comprehensive, well-structured courses that enable deep learning.
+
+Your educational philosophy:
+- Write detailed educational content in markdown format
+- Provide clear explanations appropriate for the specified depth level
+- Include key concepts with thorough explanations
+- Add examples and practical applications to reinforce learning
+- Conclude with important takeaways that summarize key points
+
+CRITICAL GUIDELINES for key terms:
+1. When introducing key technical terms, concepts, or important vocabulary for the first time, make them **bold** using markdown
+2. These bold terms will become interactive glossary items with definitions
+3. Choose exactly 5-8 of the most important terms to bold per lesson
+4. Bold terms should be significant concepts worth studying separately
+5. Only bold a term the FIRST time it appears in a lesson
+
 Always respond with valid JSON matching the exact schema provided.`;
 
   const userPrompt = `Transform the following document content into a comprehensive educational course.
@@ -583,13 +635,36 @@ Structure Requirements:
 - Number of chapters: ${lengthConfig.minChapters} to ${lengthConfig.maxChapters}
 - Lessons per chapter: ${lessonsConfig.min} to ${lessonsConfig.max}
 
-Instructions:
-1. Identify the main topic and themes from the document
-2. Organize content into logical chapters and lessons
-3. Expand on key concepts with additional context and explanations
-4. For each lesson, write comprehensive content (500-1000 words)
-5. Include exactly 5-8 key terms in **bold** format within each lesson
-6. Extract those key terms with their definitions
+For each lesson, write detailed educational content that includes:
+
+1. **Clear Explanations** (appropriate for ${contentDepth} level):
+   - Start with an engaging introduction that hooks the reader
+   - Break down complex concepts from the document into digestible parts
+   - Use appropriate language for the target audience
+   - Expand on the source material with additional context
+
+2. **Key Concepts** (5-8 per lesson):
+   - Introduce important terms in **bold** the FIRST time they appear
+   - These bold terms become interactive glossary items
+   - Choose significant concepts worth studying separately
+   - Provide context and thorough explanations for each term
+
+3. **Examples and Practical Applications**:
+   - Include real-world examples that illustrate concepts
+   - Add practical exercises or thought experiments
+   - Show how concepts apply in different contexts
+   - Use analogies to connect new ideas to familiar ones
+
+4. **Important Takeaways**:
+   - End each lesson with a summary of key points
+   - Highlight the most critical information to remember
+   - Connect the lesson to broader course themes
+
+5. **Markdown Formatting**:
+   - Use headers (##, ###) to organize sections
+   - Use bullet points and numbered lists for clarity
+   - Use *italics* for emphasis and **bold** for key terms
+   - Use code blocks where appropriate (for technical content)
 
 Also generate related topics:
 - 2-3 parent topics (foundational prerequisites)
