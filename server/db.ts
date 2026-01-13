@@ -16,7 +16,8 @@ import {
   lessonProgress, InsertLessonProgress, LessonProgress,
   studyStreaks, InsertStudyStreak, StudyStreak,
   studyActivities, InsertStudyActivity,
-  userSettings, InsertUserSettings, UserSettings
+  userSettings, InsertUserSettings, UserSettings,
+  importedDocuments, InsertImportedDocument, ImportedDocument
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -520,4 +521,56 @@ export async function getFlashcardStats(userId: number, courseId?: number): Prom
     learning: cards.filter(c => c.status === 'learning' || c.status === 'review').length,
     mastered: cards.filter(c => c.status === 'mastered').length
   };
+}
+
+
+// Imported document operations
+export async function createImportedDocument(doc: InsertImportedDocument): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(importedDocuments).values(doc);
+  return result[0].insertId;
+}
+
+export async function getImportedDocumentById(id: number): Promise<ImportedDocument | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(importedDocuments).where(eq(importedDocuments.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getImportedDocumentsByUserId(userId: number): Promise<ImportedDocument[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(importedDocuments).where(eq(importedDocuments.userId, userId)).orderBy(desc(importedDocuments.createdAt));
+}
+
+export async function getUnlinkedImportedDocuments(userId: number): Promise<ImportedDocument[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(importedDocuments)
+    .where(and(
+      eq(importedDocuments.userId, userId),
+      eq(importedDocuments.status, "ready"),
+      sql`${importedDocuments.courseId} IS NULL`
+    ))
+    .orderBy(desc(importedDocuments.createdAt));
+}
+
+export async function updateImportedDocument(id: number, data: Partial<InsertImportedDocument>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(importedDocuments).set(data).where(eq(importedDocuments.id, id));
+}
+
+export async function deleteImportedDocument(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(importedDocuments).where(eq(importedDocuments.id, id));
+}
+
+export async function linkDocumentToCourse(documentId: number, courseId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(importedDocuments).set({ courseId }).where(eq(importedDocuments.id, documentId));
 }

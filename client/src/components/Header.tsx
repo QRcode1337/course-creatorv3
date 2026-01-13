@@ -21,12 +21,14 @@ import {
   Settings,
   User,
   Layers,
+  Upload,
 } from "lucide-react";
 import { useState } from "react";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/library", label: "Library", icon: Library },
+  { href: "/import", label: "Import", icon: Upload },
   { href: "/flashcards", label: "Flashcards", icon: Layers },
   { href: "/knowledge-graph", label: "Knowledge Graph", icon: Brain },
   { href: "/calendar", label: "Calendar", icon: Calendar },

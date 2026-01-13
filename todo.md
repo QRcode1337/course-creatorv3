@@ -130,3 +130,15 @@
 - [x] Clickable glossary terms with tooltip definitions
 - [x] Related topics sidebar with quick course creation
 - [x] Mobile-optimized touch targets (44px minimum)
+
+
+## Document Import Feature
+- [x] File upload endpoint for documents (PDF, DOCX, TXT, MD)
+- [x] Document content extraction using appropriate parsers
+- [x] Store uploaded documents in S3 with metadata in database
+- [x] AI-powered content analysis to generate course structure
+- [x] Import UI with drag-and-drop file upload
+- [x] Progress indicator for document processing
+- [x] Preview extracted content before course generation
+- [x] Support for multiple document upload to create comprehensive courses
+- [x] Document management (view, delete uploaded documents)

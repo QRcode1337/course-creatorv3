@@ -286,3 +286,26 @@ export const studyActivities = mysqlTable("study_activities", {
 
 export type StudyActivity = typeof studyActivities.$inferSelect;
 export type InsertStudyActivity = typeof studyActivities.$inferInsert;
+
+
+/**
+ * Imported documents for course generation
+ */
+export const importedDocuments = mysqlTable("imported_documents", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  courseId: int("courseId"), // Linked after course is generated
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  fileType: mysqlEnum("fileType", ["pdf", "docx", "txt", "md"]).notNull(),
+  fileUrl: text("fileUrl").notNull(),
+  fileKey: varchar("fileKey", { length: 512 }).notNull(),
+  fileSize: int("fileSize").notNull(), // in bytes
+  extractedContent: text("extractedContent"), // Parsed text content
+  status: mysqlEnum("status", ["uploading", "processing", "ready", "error"]).default("uploading").notNull(),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ImportedDocument = typeof importedDocuments.$inferSelect;
+export type InsertImportedDocument = typeof importedDocuments.$inferInsert;

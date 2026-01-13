@@ -1,5 +1,7 @@
 import "dotenv/config";
 import express from "express";
+import multer from "multer";
+import { storagePut } from "../storage";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -35,6 +37,32 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  // File upload endpoint
+  const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+  });
+  
+  app.post("/api/upload", upload.single("file"), async (req: any, res: any) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file provided" });
+      }
+      
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const safeFileName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
+      const fileKey = `documents/${timestamp}-${randomSuffix}-${safeFileName}`;
+      
+      const result = await storagePut(fileKey, req.file.buffer, req.file.mimetype);
+      
+      res.json({ url: result.url, key: result.key });
+    } catch (error) {
+      console.error("Upload error:", error);
+      res.status(500).json({ error: "Failed to upload file" });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

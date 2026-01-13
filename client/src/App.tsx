@@ -13,6 +13,7 @@ import Flashcards from "./pages/Flashcards";
 import KnowledgeGraph from "./pages/KnowledgeGraph";
 import Calendar from "./pages/Calendar";
 import Settings from "./pages/Settings";
+import ImportDocument from "./pages/ImportDocument";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/knowledge-graph" component={KnowledgeGraph} />
       <Route path="/calendar" component={Calendar} />
       <Route path="/settings" component={Settings} />
+      <Route path="/import" component={ImportDocument} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

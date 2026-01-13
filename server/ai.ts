@@ -542,3 +542,240 @@ Respond with JSON:
   const parsed = JSON.parse(content);
   return parsed.topics;
 }
+
+
+// Generate course from imported document content
+export async function generateCourseFromDocument(
+  documentContent: string,
+  approach: "balanced" | "rigorous" | "easy",
+  courseLength: "short" | "medium" | "comprehensive",
+  lessonsPerChapter: "few" | "moderate" | "many",
+  contentDepth: "introductory" | "intermediate" | "advanced",
+  userSettings?: UserSettings
+): Promise<CourseStructure> {
+  const lengthConfig = courseLengthConfig[courseLength];
+  const lessonsConfig = lessonsPerChapterConfig[lessonsPerChapter];
+  
+  // Truncate content if too long (keep first 50000 chars)
+  const truncatedContent = documentContent.length > 50000 
+    ? documentContent.substring(0, 50000) + "\n\n[Content truncated...]"
+    : documentContent;
+  
+  const systemPrompt = `You are an expert curriculum designer and educator. 
+Your task is to analyze provided document content and transform it into a well-structured educational course.
+Extract the key concepts, organize them logically, and create comprehensive lessons.
+Always respond with valid JSON matching the exact schema provided.`;
+
+  const userPrompt = `Transform the following document content into a comprehensive educational course.
+
+DOCUMENT CONTENT:
+${truncatedContent}
+
+---
+
+Create a course based on this content with the following specifications:
+
+Approach: ${approachDescriptions[approach]}
+
+Content Depth: ${contentDepthDescriptions[contentDepth]}
+
+Structure Requirements:
+- Number of chapters: ${lengthConfig.minChapters} to ${lengthConfig.maxChapters}
+- Lessons per chapter: ${lessonsConfig.min} to ${lessonsConfig.max}
+
+Instructions:
+1. Identify the main topic and themes from the document
+2. Organize content into logical chapters and lessons
+3. Expand on key concepts with additional context and explanations
+4. For each lesson, write comprehensive content (500-1000 words)
+5. Include exactly 5-8 key terms in **bold** format within each lesson
+6. Extract those key terms with their definitions
+
+Also generate related topics:
+- 2-3 parent topics (foundational prerequisites)
+- 2-3 child topics (advanced specializations)
+- 2-3 sibling topics (parallel domains)
+
+Respond with a JSON object matching this exact structure:
+{
+  "title": "Course Title (derived from document)",
+  "description": "Course description",
+  "chapters": [
+    {
+      "title": "Chapter Title",
+      "description": "Chapter description",
+      "lessons": [
+        {
+          "title": "Lesson Title",
+          "content": "Full lesson content with **bold key terms**...",
+          "keyTerms": [
+            { "term": "Key Term", "definition": "Definition of the term" }
+          ]
+        }
+      ]
+    }
+  ],
+  "relatedTopics": [
+    { "name": "Topic Name", "relationship": "parent|child|sibling", "description": "Brief description" }
+  ]
+}`;
+
+  const response = await invokeLLM({
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "course_structure",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "Course title" },
+            description: { type: "string", description: "Course description" },
+            chapters: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  title: { type: "string" },
+                  description: { type: "string" },
+                  lessons: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        title: { type: "string" },
+                        content: { type: "string" },
+                        keyTerms: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              term: { type: "string" },
+                              definition: { type: "string" }
+                            },
+                            required: ["term", "definition"],
+                            additionalProperties: false
+                          }
+                        }
+                      },
+                      required: ["title", "content", "keyTerms"],
+                      additionalProperties: false
+                    }
+                  }
+                },
+                required: ["title", "description", "lessons"],
+                additionalProperties: false
+              }
+            },
+            relatedTopics: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  relationship: { type: "string", enum: ["parent", "child", "sibling"] },
+                  description: { type: "string" }
+                },
+                required: ["name", "relationship", "description"],
+                additionalProperties: false
+              }
+            }
+          },
+          required: ["title", "description", "chapters", "relatedTopics"],
+          additionalProperties: false
+        }
+      }
+    }
+  });
+
+  const content = response.choices[0]?.message?.content;
+  if (!content || typeof content !== 'string') {
+    throw new Error("Failed to generate course from document");
+  }
+
+  return JSON.parse(content) as CourseStructure;
+}
+
+// Analyze document content to extract summary and suggested course structure
+export async function analyzeDocumentContent(
+  documentContent: string
+): Promise<{
+  suggestedTitle: string;
+  summary: string;
+  mainTopics: string[];
+  estimatedChapters: number;
+  recommendedApproach: "balanced" | "rigorous" | "easy";
+  recommendedDepth: "introductory" | "intermediate" | "advanced";
+}> {
+  // Truncate content if too long
+  const truncatedContent = documentContent.length > 30000 
+    ? documentContent.substring(0, 30000) + "\n\n[Content truncated...]"
+    : documentContent;
+
+  const systemPrompt = `You are an expert content analyst and curriculum designer.
+Analyze document content and provide insights for course creation.
+Always respond with valid JSON.`;
+
+  const userPrompt = `Analyze the following document content and provide recommendations for creating an educational course:
+
+DOCUMENT CONTENT:
+${truncatedContent}
+
+---
+
+Provide:
+1. A suggested course title
+2. A brief summary of the content (2-3 sentences)
+3. Main topics covered (list of 5-10 key topics)
+4. Estimated number of chapters needed
+5. Recommended pedagogical approach (balanced, rigorous, or easy)
+6. Recommended content depth (introductory, intermediate, or advanced)
+
+Respond with JSON:
+{
+  "suggestedTitle": "Course Title",
+  "summary": "Brief summary of the document content",
+  "mainTopics": ["Topic 1", "Topic 2", ...],
+  "estimatedChapters": 5,
+  "recommendedApproach": "balanced|rigorous|easy",
+  "recommendedDepth": "introductory|intermediate|advanced"
+}`;
+
+  const response = await invokeLLM({
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "document_analysis",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: {
+            suggestedTitle: { type: "string" },
+            summary: { type: "string" },
+            mainTopics: { type: "array", items: { type: "string" } },
+            estimatedChapters: { type: "integer" },
+            recommendedApproach: { type: "string", enum: ["balanced", "rigorous", "easy"] },
+            recommendedDepth: { type: "string", enum: ["introductory", "intermediate", "advanced"] }
+          },
+          required: ["suggestedTitle", "summary", "mainTopics", "estimatedChapters", "recommendedApproach", "recommendedDepth"],
+          additionalProperties: false
+        }
+      }
+    }
+  });
+
+  const content = response.choices[0]?.message?.content;
+  if (!content || typeof content !== 'string') {
+    throw new Error("Failed to analyze document");
+  }
+
+  return JSON.parse(content);
+}

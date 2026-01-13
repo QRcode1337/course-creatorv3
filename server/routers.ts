@@ -699,6 +699,207 @@ const settingsRouter = router({
     }),
 });
 
+// Document import router
+const documentRouter = router({
+  // Upload a document
+  upload: protectedProcedure
+    .input(z.object({
+      fileName: z.string(),
+      fileType: z.enum(["pdf", "docx", "txt", "md"]),
+      fileUrl: z.string(),
+      fileKey: z.string(),
+      fileSize: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const documentId = await db.createImportedDocument({
+        userId: ctx.user.id,
+        fileName: input.fileName,
+        fileType: input.fileType,
+        fileUrl: input.fileUrl,
+        fileKey: input.fileKey,
+        fileSize: input.fileSize,
+        status: "processing",
+      });
+
+      // Process document asynchronously
+      processDocumentAsync(documentId, input.fileUrl, input.fileType);
+
+      return { success: true, documentId };
+    }),
+
+  // Get user's documents
+  list: protectedProcedure.query(async ({ ctx }) => {
+    return db.getImportedDocumentsByUserId(ctx.user.id);
+  }),
+
+  // Get unlinked documents (ready for course generation)
+  getUnlinked: protectedProcedure.query(async ({ ctx }) => {
+    return db.getUnlinkedImportedDocuments(ctx.user.id);
+  }),
+
+  // Get document by ID
+  getById: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const doc = await db.getImportedDocumentById(input.id);
+      if (!doc || doc.userId !== ctx.user.id) {
+        throw new Error("Document not found");
+      }
+      return doc;
+    }),
+
+  // Analyze document content
+  analyze: protectedProcedure
+    .input(z.object({ documentId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const doc = await db.getImportedDocumentById(input.documentId);
+      if (!doc || doc.userId !== ctx.user.id) {
+        throw new Error("Document not found");
+      }
+      if (!doc.extractedContent) {
+        throw new Error("Document not yet processed");
+      }
+
+      const analysis = await ai.analyzeDocumentContent(doc.extractedContent);
+      return analysis;
+    }),
+
+  // Generate course from document
+  generateCourse: protectedProcedure
+    .input(z.object({
+      documentIds: z.array(z.number()).min(1),
+      approach: z.enum(["balanced", "rigorous", "easy"]).default("balanced"),
+      courseLength: z.enum(["short", "medium", "comprehensive"]).default("medium"),
+      lessonsPerChapter: z.enum(["few", "moderate", "many"]).default("moderate"),
+      contentDepth: z.enum(["introductory", "intermediate", "advanced"]).default("intermediate"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Get all documents and combine content
+      let combinedContent = "";
+      const documents = [];
+      
+      for (const docId of input.documentIds) {
+        const doc = await db.getImportedDocumentById(docId);
+        if (!doc || doc.userId !== ctx.user.id) {
+          throw new Error(`Document ${docId} not found`);
+        }
+        if (doc.status !== "ready" || !doc.extractedContent) {
+          throw new Error(`Document ${doc.fileName} is not ready for processing`);
+        }
+        documents.push(doc);
+        combinedContent += `\n\n--- Content from: ${doc.fileName} ---\n\n${doc.extractedContent}`;
+      }
+
+      // Generate course from combined content
+      const courseStructure = await ai.generateCourseFromDocument(
+        combinedContent,
+        input.approach,
+        input.courseLength,
+        input.lessonsPerChapter,
+        input.contentDepth
+      );
+
+      // Create course in database
+      const courseId = await db.createCourse({
+        userId: ctx.user.id,
+        title: courseStructure.title,
+        description: courseStructure.description,
+        topic: courseStructure.title, // Use generated title as topic
+        approach: input.approach,
+        courseLength: input.courseLength,
+        lessonsPerChapter: input.lessonsPerChapter,
+        contentDepth: input.contentDepth,
+      });
+
+      // Create chapters and lessons
+      for (let chapterIndex = 0; chapterIndex < courseStructure.chapters.length; chapterIndex++) {
+        const chapter = courseStructure.chapters[chapterIndex];
+        const chapterId = await db.createChapter({
+          courseId,
+          title: chapter.title,
+          description: chapter.description,
+          orderIndex: chapterIndex,
+        });
+
+        for (let lessonIndex = 0; lessonIndex < chapter.lessons.length; lessonIndex++) {
+          const lesson = chapter.lessons[lessonIndex];
+          const lessonId = await db.createLesson({
+            chapterId,
+            courseId,
+            title: lesson.title,
+            content: lesson.content,
+            orderIndex: lessonIndex,
+          });
+
+          if (lesson.keyTerms && lesson.keyTerms.length > 0) {
+            await db.createGlossaryTerms(
+              lesson.keyTerms.map(term => ({
+                lessonId,
+                courseId,
+                term: term.term,
+                definition: term.definition,
+              }))
+            );
+          }
+        }
+      }
+
+      // Create related topics
+      if (courseStructure.relatedTopics && courseStructure.relatedTopics.length > 0) {
+        await db.createRelatedTopics(
+          courseStructure.relatedTopics.map(topic => ({
+            courseId,
+            topicName: topic.name,
+            relationship: topic.relationship,
+            description: topic.description,
+          }))
+        );
+      }
+
+      // Link documents to course
+      for (const doc of documents) {
+        await db.linkDocumentToCourse(doc.id, courseId);
+      }
+
+      return { success: true, courseId };
+    }),
+
+  // Delete a document
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const doc = await db.getImportedDocumentById(input.id);
+      if (!doc || doc.userId !== ctx.user.id) {
+        throw new Error("Document not found");
+      }
+      await db.deleteImportedDocument(input.id);
+      return { success: true };
+    }),
+});
+
+// Helper function to process document asynchronously
+async function processDocumentAsync(
+  documentId: number,
+  fileUrl: string,
+  fileType: "pdf" | "docx" | "txt" | "md"
+) {
+  try {
+    const { processDocument } = await import("./documentProcessor");
+    const result = await processDocument(fileUrl, fileType);
+    
+    await db.updateImportedDocument(documentId, {
+      extractedContent: result.content,
+      status: "ready",
+    });
+  } catch (error) {
+    console.error("Document processing error:", error);
+    await db.updateImportedDocument(documentId, {
+      status: "error",
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+}
+
 // Related topics router
 const relatedTopicsRouter = router({
   // Get related topics for a course
@@ -758,6 +959,7 @@ export const appRouter = router({
   progress: progressRouter,
   settings: settingsRouter,
   relatedTopics: relatedTopicsRouter,
+  document: documentRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -4,6 +4,32 @@ import type { TrpcContext } from "./_core/context";
 
 // Mock the AI module
 vi.mock("./ai", () => ({
+  generateCourseFromDocument: vi.fn().mockResolvedValue({
+    title: "Document Course",
+    description: "Course from document",
+    chapters: [
+      {
+        title: "Chapter 1",
+        description: "First chapter",
+        lessons: [
+          {
+            title: "Lesson 1",
+            content: "Lesson content from document",
+            keyTerms: [{ term: "Doc Term", definition: "Doc definition" }],
+          },
+        ],
+      },
+    ],
+    relatedTopics: [{ name: "Doc Topic", relationship: "sibling", description: "Related" }],
+  }),
+  analyzeDocumentContent: vi.fn().mockResolvedValue({
+    suggestedTitle: "Suggested Title",
+    summary: "Document summary",
+    mainTopics: ["Topic 1", "Topic 2"],
+    estimatedChapters: 5,
+    recommendedApproach: "balanced",
+    recommendedDepth: "intermediate",
+  }),
   generateCourseStructure: vi.fn().mockResolvedValue({
     title: "Test Course",
     description: "A test course description",
@@ -203,6 +229,39 @@ vi.mock("./db", () => ({
   getLessonProgressByUserId: vi.fn().mockResolvedValue([]),
   markLessonComplete: vi.fn().mockResolvedValue(undefined),
   recordStudyActivity: vi.fn().mockResolvedValue(undefined),
+  createImportedDocument: vi.fn().mockResolvedValue(1),
+  getImportedDocumentById: vi.fn().mockResolvedValue({
+    id: 1,
+    userId: 1,
+    fileName: "test.pdf",
+    fileType: "pdf",
+    fileUrl: "https://example.com/test.pdf",
+    fileKey: "documents/test.pdf",
+    fileSize: 1024,
+    extractedContent: "This is the extracted content from the document.",
+    status: "ready",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  getImportedDocumentsByUserId: vi.fn().mockResolvedValue([
+    {
+      id: 1,
+      userId: 1,
+      fileName: "test.pdf",
+      fileType: "pdf",
+      fileUrl: "https://example.com/test.pdf",
+      fileKey: "documents/test.pdf",
+      fileSize: 1024,
+      extractedContent: "Extracted content",
+      status: "ready",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  ]),
+  getUnlinkedImportedDocuments: vi.fn().mockResolvedValue([]),
+  updateImportedDocument: vi.fn().mockResolvedValue(undefined),
+  deleteImportedDocument: vi.fn().mockResolvedValue(undefined),
+  linkDocumentToCourse: vi.fn().mockResolvedValue(undefined),
 }));
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
@@ -374,6 +433,70 @@ describe("Settings Router", () => {
       preferredProvider: "anthropic",
       anthropicApiKey: "test-key",
     });
+
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("Document Router", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("lists user documents", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const documents = await caller.document.list();
+
+    expect(documents).toHaveLength(1);
+    expect(documents[0].fileName).toBe("test.pdf");
+    expect(documents[0].status).toBe("ready");
+  });
+
+  it("gets a specific document by ID", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const document = await caller.document.getById({ id: 1 });
+
+    expect(document.fileName).toBe("test.pdf");
+    expect(document.extractedContent).toBe("This is the extracted content from the document.");
+  });
+
+  it("analyzes document content", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const analysis = await caller.document.analyze({ documentId: 1 });
+
+    expect(analysis.suggestedTitle).toBe("Suggested Title");
+    expect(analysis.summary).toBe("Document summary");
+    expect(analysis.mainTopics).toContain("Topic 1");
+    expect(analysis.recommendedApproach).toBe("balanced");
+  });
+
+  it("generates course from documents", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.document.generateCourse({
+      documentIds: [1],
+      approach: "balanced",
+      courseLength: "medium",
+      lessonsPerChapter: "moderate",
+      contentDepth: "intermediate",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.courseId).toBeDefined();
+  });
+
+  it("deletes a document", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.document.delete({ id: 1 });
 
     expect(result.success).toBe(true);
   });
