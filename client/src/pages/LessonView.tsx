@@ -24,6 +24,7 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
+  Download,
   HelpCircle,
   Image as ImageIcon,
   Layers,
@@ -182,6 +183,34 @@ export default function LessonView() {
     },
   });
 
+  const exportPdf = trpc.lesson.exportPdf.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob and download
+      const byteCharacters = atob(data.pdf);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success("PDF downloaded!");
+    },
+    onError: () => {
+      toast.error("Failed to generate PDF");
+    },
+  });
+
   // Auto-save notes
   useEffect(() => {
     if (!notesSaved && notes && user) {
@@ -309,22 +338,38 @@ export default function LessonView() {
                       Lesson {currentLessonIndex + 1}
                     </CardDescription>
                   </div>
-                  {isOwner && (
+                  <div className="flex items-center gap-2">
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() => regenerateLesson.mutate({ lessonId })}
-                      disabled={regenerateLesson.isPending}
+                      onClick={() => exportPdf.mutate({ lessonId })}
+                      disabled={exportPdf.isPending}
                       className="gap-2"
                     >
-                      {regenerateLesson.isPending ? (
+                      {exportPdf.isPending ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <RefreshCw className="w-4 h-4" />
+                        <Download className="w-4 h-4" />
                       )}
-                      Regenerate
+                      Export PDF
                     </Button>
-                  )}
+                    {isOwner && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => regenerateLesson.mutate({ lessonId })}
+                        disabled={regenerateLesson.isPending}
+                        className="gap-2"
+                      >
+                        {regenerateLesson.isPending ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="w-4 h-4" />
+                        )}
+                        Regenerate
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>

@@ -183,3 +183,19 @@
 ## Bug Fixes
 - [x] Fix DialogTitle accessibility error on course page
 - [x] Add AI chatbox to course page (CourseView)
+
+
+## Lesson PDF Export Feature
+- [x] Create PDF generation service on backend
+- [x] Include lesson title and content with proper formatting
+- [x] Embed AI-generated illustrations in PDF
+- [x] Include user notes section
+- [x] Include glossary terms for the lesson
+- [x] Add export button to LessonView page
+- [x] Show loading state during PDF generation
+- [x] Trigger download when PDF is ready
+
+
+## API Bug Fixes
+- [x] Fix quiz.get returning undefined instead of null
+- [x] Fix notes.get returning undefined instead of null

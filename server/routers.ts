@@ -288,6 +288,53 @@ const lessonRouter = router({
 
       return { success: true, content: newContent.content };
     }),
+
+  // Export lesson as PDF
+  exportPdf: protectedProcedure
+    .input(z.object({ lessonId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const lesson = await db.getLessonById(input.lessonId);
+      if (!lesson) throw new Error("Lesson not found");
+
+      const chapter = await db.getChapterById(lesson.chapterId);
+      if (!chapter) throw new Error("Chapter not found");
+
+      const course = await db.getCourseById(chapter.courseId);
+      if (!course) throw new Error("Course not found");
+
+      // Get illustrations
+      const illustrations = await db.getIllustrationsByLessonId(input.lessonId);
+
+      // Get glossary terms
+      const glossaryTerms = await db.getGlossaryTermsByLessonId(input.lessonId);
+
+      // Get user notes
+      const userNote = await db.getUserNote(ctx.user.id, input.lessonId);
+
+      // Generate PDF
+      const { generateLessonPdf } = await import("./pdfGenerator");
+      const pdfBuffer = await generateLessonPdf({
+        courseTitle: course.title,
+        chapterTitle: chapter.title,
+        lessonTitle: lesson.title,
+        lessonContent: lesson.content || "",
+        illustrations: illustrations.map(ill => ({
+          url: ill.imageUrl,
+          caption: ill.prompt || undefined,
+        })),
+        glossaryTerms: glossaryTerms.map(term => ({
+          term: term.term,
+          definition: term.definition || "",
+        })),
+        userNotes: userNote?.content || undefined,
+      });
+
+      // Return base64 encoded PDF
+      return {
+        pdf: pdfBuffer.toString("base64"),
+        filename: `${lesson.title.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`,
+      };
+    }),
 });
 
 // Glossary router
@@ -474,7 +521,8 @@ const quizRouter = router({
   get: publicProcedure
     .input(z.object({ lessonId: z.number() }))
     .query(async ({ input }) => {
-      return db.getQuizByLessonId(input.lessonId);
+      const quiz = await db.getQuizByLessonId(input.lessonId);
+      return quiz ?? null;
     }),
 
   // Submit quiz answers
@@ -639,7 +687,8 @@ const notesRouter = router({
   get: protectedProcedure
     .input(z.object({ lessonId: z.number() }))
     .query(async ({ ctx, input }) => {
-      return db.getUserNote(ctx.user.id, input.lessonId);
+      const note = await db.getUserNote(ctx.user.id, input.lessonId);
+      return note ?? null;
     }),
 
   // Save note for a lesson

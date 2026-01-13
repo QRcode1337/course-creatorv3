@@ -161,6 +161,15 @@ vi.mock("./db", () => ({
   getChaptersByCourseId: vi.fn().mockResolvedValue([
     { id: 1, courseId: 1, title: "Chapter 1", description: "First chapter", orderIndex: 0 },
   ]),
+  getChapterById: vi.fn().mockResolvedValue({
+    id: 1, courseId: 1, title: "Chapter 1", description: "First chapter", orderIndex: 0,
+  }),
+  getIllustrationsByLessonId: vi.fn().mockResolvedValue([
+    { id: 1, lessonId: 1, courseId: 1, imageUrl: "https://example.com/image.png", prompt: "Test illustration" },
+  ]),
+  getUserNote: vi.fn().mockResolvedValue({
+    id: 1, userId: 1, lessonId: 1, courseId: 1, content: "My notes",
+  }),
   getLessonsByChapterId: vi.fn().mockResolvedValue([
     { id: 1, chapterId: 1, courseId: 1, title: "Lesson 1", content: "Content", orderIndex: 0 },
   ]),
@@ -522,5 +531,37 @@ describe("AI Chat Router", () => {
 
     expect(result).toHaveProperty("response");
     expect(typeof result.response).toBe("string");
+  });
+});
+
+
+// Mock puppeteer for PDF generation test
+vi.mock("puppeteer", () => ({
+  default: {
+    launch: vi.fn().mockResolvedValue({
+      newPage: vi.fn().mockResolvedValue({
+        setContent: vi.fn().mockResolvedValue(undefined),
+        pdf: vi.fn().mockResolvedValue(Buffer.from("PDF content")),
+      }),
+      close: vi.fn().mockResolvedValue(undefined),
+    }),
+  },
+}));
+
+describe("Lesson PDF Export", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("exports lesson as PDF with all content", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.lesson.exportPdf({ lessonId: 1 });
+
+    expect(result.pdf).toBeDefined();
+    expect(result.filename).toContain(".pdf");
+    // PDF is base64 encoded
+    expect(typeof result.pdf).toBe("string");
   });
 });

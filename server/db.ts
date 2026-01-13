@@ -142,6 +142,13 @@ export async function getChaptersByCourseId(courseId: number): Promise<Chapter[]
   return db.select().from(chapters).where(eq(chapters.courseId, courseId)).orderBy(asc(chapters.orderIndex));
 }
 
+export async function getChapterById(id: number): Promise<Chapter | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(chapters).where(eq(chapters.id, id)).limit(1);
+  return result[0];
+}
+
 export async function deleteChaptersByCourseId(courseId: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
