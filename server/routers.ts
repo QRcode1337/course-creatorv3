@@ -71,6 +71,31 @@ const courseRouter = router({
               }))
             );
           }
+
+          // Auto-generate one illustration per lesson
+          try {
+            const mediaResult = await ai.generateLessonMedia(
+              lesson.title,
+              lesson.content,
+              "illustration",
+              "modern"
+            );
+            
+            if (mediaResult.url) {
+              await db.createIllustration({
+                lessonId,
+                courseId,
+                imageUrl: mediaResult.url,
+                mediaType: "illustration",
+                visualStyle: "modern",
+                caption: `Illustration for ${lesson.title}`,
+                orderIndex: 0,
+              });
+            }
+          } catch (error) {
+            console.error(`Failed to generate illustration for lesson ${lesson.title}:`, error);
+            // Continue even if illustration generation fails
+          }
         }
       }
 
@@ -939,6 +964,31 @@ const relatedTopicsRouter = router({
     }),
 });
 
+// AI Chat router for lesson explanations
+const aiChatRouter = router({
+  // Chat about a lesson
+  chat: protectedProcedure
+    .input(z.object({
+      lessonId: z.number(),
+      messages: z.array(z.object({
+        role: z.enum(["system", "user", "assistant"]),
+        content: z.string(),
+      })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const lesson = await db.getLessonById(input.lessonId);
+      if (!lesson) throw new Error("Lesson not found");
+
+      const response = await ai.chatAboutLesson(
+        lesson.title,
+        lesson.content || "",
+        input.messages
+      );
+
+      return { response };
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -960,6 +1010,7 @@ export const appRouter = router({
   settings: settingsRouter,
   relatedTopics: relatedTopicsRouter,
   document: documentRouter,
+  aiChat: aiChatRouter,
 });
 
 export type AppRouter = typeof appRouter;

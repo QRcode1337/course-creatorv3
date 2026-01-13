@@ -4,6 +4,10 @@ import type { TrpcContext } from "./_core/context";
 
 // Mock the AI module
 vi.mock("./ai", () => ({
+  generateLessonMedia: vi.fn().mockResolvedValue({
+    url: "https://example.com/generated-image.png",
+  }),
+  chatAboutLesson: vi.fn().mockResolvedValue("This is an AI response about the lesson."),
   generateCourseFromDocument: vi.fn().mockResolvedValue({
     title: "Document Course",
     description: "Course from document",
@@ -84,6 +88,17 @@ vi.mock("./ai", () => ({
 
 // Mock the db module
 vi.mock("./db", () => ({
+  createIllustration: vi.fn().mockResolvedValue(1),
+  getLessonById: vi.fn().mockResolvedValue({
+    id: 1,
+    chapterId: 1,
+    courseId: 1,
+    title: "Test Lesson",
+    content: "Test content",
+    orderIndex: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
   deleteRelatedTopicsByCourseId: vi.fn().mockResolvedValue(undefined),
   deleteGlossaryTermsByCourseId: vi.fn().mockResolvedValue(undefined),
   deleteIllustrationsByCourseId: vi.fn().mockResolvedValue(undefined),
@@ -149,16 +164,6 @@ vi.mock("./db", () => ({
   getLessonsByChapterId: vi.fn().mockResolvedValue([
     { id: 1, chapterId: 1, courseId: 1, title: "Lesson 1", content: "Content", orderIndex: 0 },
   ]),
-  getLessonById: vi.fn().mockResolvedValue({
-    id: 1,
-    chapterId: 1,
-    courseId: 1,
-    title: "Lesson 1",
-    content: "Lesson content",
-    orderIndex: 0,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }),
   getGlossaryTermsByLessonId: vi.fn().mockResolvedValue([
     { id: 1, lessonId: 1, courseId: 1, term: "Term 1", definition: "Definition 1" },
   ]),
@@ -499,5 +504,23 @@ describe("Document Router", () => {
     const result = await caller.document.delete({ id: 1 });
 
     expect(result.success).toBe(true);
+  });
+});
+
+
+describe("AI Chat Router", () => {
+  it("responds to lesson chat", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.aiChat.chat({
+      lessonId: 1,
+      messages: [
+        { role: "user", content: "Explain the main concept" }
+      ],
+    });
+
+    expect(result).toHaveProperty("response");
+    expect(typeof result.response).toBe("string");
   });
 });

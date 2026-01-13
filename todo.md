@@ -150,3 +150,17 @@
 - [x] Include examples and practical applications in prompts
 - [x] Add important takeaways section guidance
 - [x] Improve markdown formatting instructions
+
+
+## Media Generation Improvements
+- [x] Automatic image generation for each lesson during course creation
+- [x] Display generated images in lesson view
+- [x] Add "Generate More" button to add additional images
+- [x] MediaGenerationDialog component for image generation options
+
+
+## AI Lesson Chat Feature
+- [x] AI chat box in lesson view to explain content
+- [x] Context-aware responses based on lesson content
+- [x] Save AI responses to notes functionality
+- [x] Chat history within lesson session

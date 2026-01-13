@@ -854,3 +854,59 @@ Respond with JSON:
 
   return JSON.parse(content);
 }
+
+
+// AI Chat for lesson explanations
+export interface ChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+export async function chatAboutLesson(
+  lessonTitle: string,
+  lessonContent: string,
+  messages: ChatMessage[],
+  userSettings?: UserSettings
+): Promise<string> {
+  const systemPrompt = `You are an expert educational tutor helping a student understand the lesson "${lessonTitle}".
+
+LESSON CONTENT:
+${lessonContent.substring(0, 8000)}
+
+---
+
+Your role is to:
+1. Answer questions about the lesson content clearly and accurately
+2. Provide additional examples and explanations when asked
+3. Help clarify confusing concepts
+4. Connect ideas to real-world applications
+5. Encourage deeper understanding through Socratic questioning when appropriate
+
+Keep your responses:
+- Focused on the lesson content
+- Clear and easy to understand
+- Supportive and encouraging
+- Well-formatted with markdown when helpful
+
+If the student asks about something not covered in the lesson, acknowledge it and try to relate it back to the lesson content or suggest they explore it further.`;
+
+  // Build messages array with system prompt
+  const fullMessages: ChatMessage[] = [
+    { role: "system", content: systemPrompt },
+    ...messages.filter(m => m.role !== "system")
+  ];
+
+  const response = await invokeLLM({
+    messages: fullMessages.map(m => ({
+      role: m.role as "system" | "user" | "assistant",
+      content: m.content
+    }))
+  });
+
+  const content = response.choices[0]?.message?.content;
+  if (!content || typeof content !== 'string') {
+    throw new Error("Failed to get AI response");
+  }
+
+  return content;
+}
