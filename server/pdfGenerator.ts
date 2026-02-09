@@ -107,11 +107,11 @@ export async function generateLessonPdf(data: LessonPdfData): Promise<Buffer> {
       font-size: 24pt;
       font-weight: 700;
       color: #1a1a2e;
-      margin-bottom: 10px;
     }
     
     .content {
       margin-bottom: 30px;
+      line-height: 1.8;
     }
     
     .content h1 {
@@ -120,21 +120,21 @@ export async function generateLessonPdf(data: LessonPdfData): Promise<Buffer> {
       color: #1a1a2e;
       margin: 25px 0 15px 0;
       border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 8px;
+      padding-bottom: 10px;
     }
     
     .content h2 {
-      font-size: 15pt;
+      font-size: 16pt;
       font-weight: 600;
       color: #334155;
       margin: 20px 0 12px 0;
     }
     
     .content h3 {
-      font-size: 13pt;
+      font-size: 14pt;
       font-weight: 600;
       color: #475569;
-      margin: 18px 0 10px 0;
+      margin: 15px 0 10px 0;
     }
     
     .content p {
@@ -143,8 +143,8 @@ export async function generateLessonPdf(data: LessonPdfData): Promise<Buffer> {
     }
     
     .content ul, .content ol {
-      margin: 12px 0;
-      padding-left: 25px;
+      margin: 12px 0 12px 30px;
+      padding: 0;
     }
     
     .content li {
@@ -171,6 +171,7 @@ export async function generateLessonPdf(data: LessonPdfData): Promise<Buffer> {
       border-radius: 8px;
       overflow-x: auto;
       margin: 15px 0;
+      font-size: 9pt;
     }
     
     .content pre code {
@@ -189,14 +190,14 @@ export async function generateLessonPdf(data: LessonPdfData): Promise<Buffer> {
       font-weight: 700;
       color: #1a1a2e;
       margin-bottom: 15px;
-      padding-bottom: 8px;
       border-bottom: 2px solid #6366f1;
+      padding-bottom: 8px;
     }
     
     .illustrations {
       display: flex;
       flex-wrap: wrap;
-      gap: 20px;
+      gap: 15px;
       margin-top: 15px;
     }
     
@@ -335,12 +336,13 @@ export async function generateLessonPdf(data: LessonPdfData): Promise<Buffer> {
 </html>
   `;
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-
+  let browser;
   try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
     const page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: "networkidle0" });
     
@@ -356,8 +358,13 @@ export async function generateLessonPdf(data: LessonPdfData): Promise<Buffer> {
     });
 
     return Buffer.from(pdfBuffer);
+  } catch (error) {
+    console.error("Error generating lesson PDF:", error);
+    throw new Error(`Failed to generate lesson PDF: ${error instanceof Error ? error.message : String(error)}`);
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 }
 
@@ -892,12 +899,13 @@ export async function generateCoursePdf(data: CoursePdfData): Promise<Buffer> {
 </html>
   `;
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-
+  let browser;
   try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
     const page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: "networkidle0" });
     
@@ -914,7 +922,12 @@ export async function generateCoursePdf(data: CoursePdfData): Promise<Buffer> {
     });
 
     return Buffer.from(pdfBuffer);
+  } catch (error) {
+    console.error("Error generating course PDF:", error);
+    throw new Error(`Failed to generate course PDF: ${error instanceof Error ? error.message : String(error)}`);
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close();
+    }
   }
 }

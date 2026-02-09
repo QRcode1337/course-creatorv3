@@ -233,3 +233,6 @@
 - [x] Add vitest tests for PDF generation functions
 - [x] Test course PDF generation with multiple chapters and lessons
 - [x] Test lesson PDF generation with illustrations and glossary
+- [x] Debug full course PDF export failing in production
+- [x] Add error logging to PDF export endpoint
+- [x] Fix Puppeteer error handling with try-catch blocks
