@@ -183,6 +183,7 @@
 ## Bug Fixes
 - [x] Fix DialogTitle accessibility error on course page
 - [x] Add AI chatbox to course page (CourseView)
+- [x] Add PDF export tests for course and lesson generation
 
 
 ## Lesson PDF Export Feature
@@ -227,3 +228,8 @@
 ## Lesson Image Layout
 - [x] Move images to top of lesson content
 - [x] Display images in full size
+
+## PDF Export Testing
+- [x] Add vitest tests for PDF generation functions
+- [x] Test course PDF generation with multiple chapters and lessons
+- [x] Test lesson PDF generation with illustrations and glossary
