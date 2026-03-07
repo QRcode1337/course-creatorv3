@@ -1,0 +1,7 @@
+Homepage Screenshot Observation (2026-03-07):
+- Hero section looks great: "AI Learning Workspace" badge, new headline, subtext with all features mentioned
+- CTAs showing "Create New Course" and "Explore Sample Courses" (logged in view)
+- For guest view, should show "Generate Free Sample Course" instead
+- No TypeScript errors, no build errors
+- The hero gradient background is subtle and clean
+- Need to verify the rest of the page scrolls correctly with feature cards

@@ -844,6 +844,11 @@ export default function LessonView() {
                       </Button>
                     )}
 
+                    {/* Chat persistence notice */}
+                    <p className="text-xs text-muted-foreground text-center">
+                      Chat is session-based and resets when you leave. Save answers to notes to keep them.
+                    </p>
+
                     {/* Chat input */}
                     <div className="flex gap-2">
                       <Input

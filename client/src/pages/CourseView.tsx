@@ -424,6 +424,11 @@ export default function CourseView() {
                       </div>
                     </ScrollArea>
 
+                    {/* Chat persistence notice */}
+                    <p className="text-xs text-muted-foreground text-center">
+                      Chat is session-based and resets when you leave. Save important answers to notes.
+                    </p>
+
                     {/* Chat input */}
                     <div className="flex gap-2">
                       <Input

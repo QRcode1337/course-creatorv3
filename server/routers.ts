@@ -119,6 +119,23 @@ const courseRouter = router({
     return db.getCoursesByUserId(ctx.user.id);
   }),
 
+  // Generate a preview course (no auth required, no DB save)
+  preview: publicProcedure
+    .input(z.object({
+      topic: z.string().min(1),
+    }))
+    .mutation(async ({ input }) => {
+      // Generate a short preview course structure using AI
+      const courseStructure = await ai.generateCourseStructure(
+        input.topic,
+        "easy",
+        "short",
+        "few",
+        "introductory"
+      );
+      return courseStructure;
+    }),
+
   // Get all public courses
   listAll: publicProcedure.query(async () => {
     return db.getAllCourses();

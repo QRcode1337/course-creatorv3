@@ -14,6 +14,7 @@ import KnowledgeGraph from "./pages/KnowledgeGraph";
 import Calendar from "./pages/Calendar";
 import Settings from "./pages/Settings";
 import ImportDocument from "./pages/ImportDocument";
+import PreviewCourse from "./pages/PreviewCourse";
 
 function Router() {
   return (
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/calendar" component={Calendar} />
       <Route path="/settings" component={Settings} />
       <Route path="/import" component={ImportDocument} />
+      <Route path="/preview" component={PreviewCourse} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

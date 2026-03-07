@@ -6,15 +6,18 @@ import Header from "@/components/Header";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import {
+  ArrowRight,
   BookOpen,
   Brain,
   Code,
+  Download,
   FlaskConical,
   Globe,
   GraduationCap,
   History,
+  Key,
   Layers,
-  Lightbulb,
+  MessageCircle,
   Music,
   Palette,
   Plus,
@@ -34,11 +37,37 @@ const suggestedTopics = [
   { topic: "Behavioral Economics", icon: TrendingUp, category: "Business" },
 ];
 
-const categories = [
-  { name: "Technology", icon: Code, color: "bg-blue-500" },
-  { name: "Science", icon: FlaskConical, color: "bg-green-500" },
-  { name: "History", icon: History, color: "bg-amber-500" },
-  { name: "Arts", icon: Palette, color: "bg-purple-500" },
+const coreFeatures = [
+  {
+    icon: Sparkles,
+    title: "Course Generation",
+    description: "Build a structured course with modules, lessons, and key terms from a single prompt.",
+    gradient: "gradient-primary",
+  },
+  {
+    icon: MessageCircle,
+    title: "Chapter AI Chat",
+    description: "Ask questions inside each chapter for fast clarification and deeper study.",
+    gradient: "gradient-accent",
+  },
+  {
+    icon: Layers,
+    title: "Flashcards",
+    description: "Review key concepts with spaced repetition without making study materials by hand.",
+    gradient: "bg-emerald-500",
+  },
+  {
+    icon: Download,
+    title: "PDF Export",
+    description: "Export finished courses into clean, shareable documents with illustrations.",
+    gradient: "bg-rose-500",
+  },
+  {
+    icon: Key,
+    title: "Flexible AI Setup",
+    description: "Use Manus AI out of the box or add your own API key for more control.",
+    gradient: "bg-violet-500",
+  },
 ];
 
 export default function Home() {
@@ -55,44 +84,75 @@ export default function Home() {
       <Header />
 
       {/* Hero Section */}
-      <section className="gradient-hero py-16 md:py-24">
+      <section className="gradient-hero py-20 md:py-28">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-6">
               <Sparkles className="w-4 h-4" />
-              <span className="text-sm font-medium">AI-Powered Learning</span>
+              <span className="text-sm font-medium">AI Learning Workspace</span>
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              Create Your Perfect
-              <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent"> Learning Journey</span>
+              Turn any topic into a structured course and
+              <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent"> study system</span>
+              {" "}in minutes
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Transform any topic into a comprehensive course with AI-generated lessons, 
-              interactive quizzes, flashcards, and visual content.
+            <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
+              Generate lessons, review with flashcards, chat inside chapters, and export to PDF.
+              Start with Manus AI or connect your own API key.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {user ? (
                 <Link href="/create">
-                  <Button size="lg" className="gap-2 w-full sm:w-auto">
+                  <Button size="lg" className="gap-2 w-full sm:w-auto text-base px-8 py-6">
                     <Plus className="w-5 h-5" />
                     Create New Course
                   </Button>
                 </Link>
               ) : (
-                <Button size="lg" className="gap-2" asChild>
-                  <a href={getLoginUrl()}>
-                    <GraduationCap className="w-5 h-5" />
-                    Get Started Free
-                  </a>
-                </Button>
+                <Link href="/create">
+                  <Button size="lg" className="gap-2 w-full sm:w-auto text-base px-8 py-6">
+                    <Sparkles className="w-5 h-5" />
+                    Generate Free Sample Course
+                  </Button>
+                </Link>
               )}
               <Link href="/library">
-                <Button size="lg" variant="outline" className="gap-2 w-full sm:w-auto bg-white/50">
+                <Button size="lg" variant="outline" className="gap-2 w-full sm:w-auto bg-white/50 text-base px-8 py-6">
                   <BookOpen className="w-5 h-5" />
-                  Browse Library
+                  Explore Sample Courses
                 </Button>
               </Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Core Features Row */}
+      <section className="py-16 md:py-20 border-b">
+        <div className="container">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Everything you need to learn, teach, or train from one prompt</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+              A complete study workflow: generate, study, ask questions, export.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {coreFeatures.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <Card key={feature.title} className="card-hover text-center border-0 shadow-sm bg-muted/30">
+                  <CardContent className="pt-8 pb-6 px-5">
+                    <div className={`w-14 h-14 rounded-2xl ${feature.gradient} flex items-center justify-center mx-auto mb-5`}>
+                      <Icon className="w-7 h-7 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-base mb-2">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -104,7 +164,9 @@ export default function Home() {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">Continue Learning</h2>
               <Link href="/library">
-                <Button variant="ghost" size="sm">View All</Button>
+                <Button variant="ghost" size="sm" className="gap-1">
+                  View All <ArrowRight className="w-4 h-4" />
+                </Button>
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -156,7 +218,7 @@ export default function Home() {
                   <div className="text-3xl font-bold text-primary">
                     {progressData.streak.currentStreak}
                   </div>
-                  <p className="text-sm text-muted-foreground">Day Streak 🔥</p>
+                  <p className="text-sm text-muted-foreground">Day Streak</p>
                 </CardContent>
               </Card>
               <Card className="glass">
@@ -188,13 +250,41 @@ export default function Home() {
         </section>
       )}
 
+      {/* How It Works Section */}
+      <section className="py-16 md:py-20 border-b">
+        <div className="container">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">How it works</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto text-lg">
+              From topic to study system in four steps
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+            {[
+              { step: "1", title: "Enter a topic", desc: "Type any subject you want to learn." },
+              { step: "2", title: "AI generates your course", desc: "Structured chapters, lessons, and key terms." },
+              { step: "3", title: "Study and interact", desc: "Flashcards, quizzes, and chapter AI chat." },
+              { step: "4", title: "Export and share", desc: "Download as a professional PDF." },
+            ].map((item) => (
+              <div key={item.step} className="text-center">
+                <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center mx-auto mb-4 text-white font-bold text-lg">
+                  {item.step}
+                </div>
+                <h3 className="font-semibold mb-2">{item.title}</h3>
+                <p className="text-sm text-muted-foreground">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Suggested Topics */}
       <section className="py-12 border-b">
         <div className="container">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold mb-2">Explore Topics</h2>
             <p className="text-muted-foreground">
-              Get inspired by these popular learning topics
+              Pick a topic to generate a course instantly
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -203,7 +293,7 @@ export default function Home() {
               return (
                 <Link
                   key={index}
-                  href={user ? `/create?topic=${encodeURIComponent(item.topic)}` : getLoginUrl()}
+                  href={`/create?topic=${encodeURIComponent(item.topic)}`}
                 >
                   <Card className="card-hover cursor-pointer group">
                     <CardContent className="pt-6">
@@ -225,100 +315,107 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="py-12 border-b">
+      {/* Detailed Feature Breakdown */}
+      <section className="py-16 md:py-20 border-b bg-muted/30">
         <div className="container">
-          <h2 className="text-2xl font-bold mb-6 text-center">Browse by Category</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {categories.map((category) => {
-              const Icon = category.icon;
-              return (
-                <Link
-                  key={category.name}
-                  href={user ? `/create?category=${encodeURIComponent(category.name)}` : getLoginUrl()}
-                >
-                  <Card className="card-hover cursor-pointer text-center">
-                    <CardContent className="pt-6">
-                      <div className={`w-14 h-14 rounded-xl ${category.color} flex items-center justify-center mx-auto mb-3`}>
-                        <Icon className="w-7 h-7 text-white" />
-                      </div>
-                      <h3 className="font-medium">{category.name}</h3>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Built for real studying</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+              Not just generation. A complete loop: generate, study, ask questions, export.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <Card className="border-0 shadow-md">
+              <CardContent className="pt-8 pb-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shrink-0">
+                    <Brain className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Knowledge Graph</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      Visualize how topics connect. See parent, child, and sibling relationships across your courses. Discover new learning paths.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-md">
+              <CardContent className="pt-8 pb-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center shrink-0">
+                    <GraduationCap className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Interactive Quizzes</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      AI-generated quizzes at the end of each lesson with multiple-choice and short-answer questions. Instant feedback and explanations.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-md">
+              <CardContent className="pt-8 pb-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-pink-500 flex items-center justify-center shrink-0">
+                    <Palette className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">AI Illustrations</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      Generate illustrations, infographics, and diagrams for each lesson. Choose from multiple visual styles.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-md">
+              <CardContent className="pt-8 pb-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-cyan-500 flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Progress Tracking</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      Track lesson completion, flashcard mastery, quiz scores, and study streaks. Stay motivated with a study calendar.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-16">
-        <div className="container">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Powerful Learning Features</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Everything you need for effective learning, powered by AI
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">AI Course Generation</h3>
-              <p className="text-muted-foreground">
-                Generate complete courses with chapters, lessons, and key terms from any topic
+      {/* CTA Section */}
+      {!user && (
+        <section className="py-16 md:py-20">
+          <div className="container">
+            <div className="max-w-2xl mx-auto text-center">
+              <h2 className="text-3xl font-bold mb-4">Start learning in minutes</h2>
+              <p className="text-muted-foreground text-lg mb-8">
+                Generate a free sample course to see how it works. No account required to preview.
               </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-2xl gradient-accent flex items-center justify-center mx-auto mb-4">
-                <Layers className="w-8 h-8 text-white" />
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/create">
+                  <Button size="lg" className="gap-2 text-base px-8 py-6">
+                    <Sparkles className="w-5 h-5" />
+                    Generate Free Sample Course
+                  </Button>
+                </Link>
+                <Button size="lg" variant="outline" className="gap-2 text-base px-8 py-6" asChild>
+                  <a href={getLoginUrl()}>
+                    <GraduationCap className="w-5 h-5" />
+                    Sign In to Save Courses
+                  </a>
+                </Button>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Smart Flashcards</h3>
-              <p className="text-muted-foreground">
-                SM-2 spaced repetition algorithm for optimal memory retention
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-2xl bg-green-500 flex items-center justify-center mx-auto mb-4">
-                <Brain className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Knowledge Graph</h3>
-              <p className="text-muted-foreground">
-                Visualize topic relationships and discover learning paths
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-2xl bg-purple-500 flex items-center justify-center mx-auto mb-4">
-                <Lightbulb className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Interactive Quizzes</h3>
-              <p className="text-muted-foreground">
-                AI-generated quizzes with instant feedback and explanations
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-2xl bg-pink-500 flex items-center justify-center mx-auto mb-4">
-                <Palette className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Visual Content</h3>
-              <p className="text-muted-foreground">
-                Generate illustrations, infographics, and diagrams for lessons
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-2xl bg-cyan-500 flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Progress Tracking</h3>
-              <p className="text-muted-foreground">
-                Track your learning journey with detailed analytics and streaks
-              </p>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Footer */}
       <footer className="py-8 border-t bg-muted/30">
@@ -328,10 +425,10 @@ export default function Home() {
               <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
                 <BookOpen className="w-4 h-4 text-white" />
               </div>
-              <span className="font-semibold">AI Course Creator</span>
+              <span className="font-semibold">Course Creator</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Powered by AI • Built for learners
+              AI learning workspace — generate, study, chat, export
             </p>
           </div>
         </div>

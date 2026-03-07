@@ -236,3 +236,41 @@
 - [x] Debug full course PDF export failing in production
 - [x] Add error logging to PDF export endpoint
 - [x] Fix Puppeteer error handling with try-catch blocks
+
+
+## Homepage & Onboarding Repositioning
+- [x] Update hero section to emphasize "AI Learning Workspace" positioning
+- [x] Highlight all five core features: course generation, chapter chat, flashcards, PDF export, API keys
+- [x] Redesign feature section with clear feature cards and descriptions
+- [x] Add visual icons/graphics for each feature
+- [x] Update value proposition copy to focus on learning outcomes
+- [x] Enhance onboarding flow to showcase all capabilities
+- [x] Keep guest preview generation as first-run experience
+
+## Guest Preview Enhancement
+- [x] Add flashcard preview section to guest preview
+- [x] Add chapter AI chat teaser/demo to guest preview
+- [x] Show sample flashcards from generated course
+- [x] Include interactive chat example showing AI responses
+- [x] Add clear CTA to sign up and save progress
+
+## Microcopy & Transparency
+- [x] Add microcopy explaining chapter chat is session-based (not saved until signup)
+- [x] Clarify that chat history is lost after preview unless user signs up
+- [x] Explain API key options: use built-in Manus LLM or bring your own
+- [x] Add help text about optional API key configuration
+- [x] Include tooltips explaining each feature's data persistence
+
+## Visual Design Updates
+- [x] Update color scheme to reflect "workspace" positioning
+- [ ] Add feature preview screenshots/GIFs
+- [x] Create consistent component styling across homepage
+- [x] Ensure responsive design for mobile/tablet
+- [x] Add subtle animations to feature cards
+
+## Preview Endpoint & Tests
+- [x] Add public course.preview mutation endpoint
+- [x] Create PreviewCourse.tsx page with course outline, flashcard preview, chat teaser
+- [x] Add /preview route to App.tsx
+- [x] Write vitest tests for preview endpoint (5 tests)
+- [x] Guest-friendly CreateCourse.tsx with preview generation flow
