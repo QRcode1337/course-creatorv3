@@ -274,3 +274,11 @@
 - [x] Add /preview route to App.tsx
 - [x] Write vitest tests for preview endpoint (5 tests)
 - [x] Guest-friendly CreateCourse.tsx with preview generation flow
+
+## Critical Bug - Courses Not Being Created or Shown
+- [x] Investigate why course creation is failing - identified timeout in image generation
+- [x] Check server logs for errors during course.create mutation - added detailed logging
+- [x] Verify database connectivity and schema - confirmed working (7 existing courses)
+- [x] Check AI generation endpoint is responding - confirmed working with direct test
+- [x] Fix root cause - deferred image generation to background process
+- [x] Verify courses can be created and displayed - all 25 tests pass

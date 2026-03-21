@@ -18,14 +18,23 @@ const courseRouter = router({
       contentDepth: z.enum(["introductory", "intermediate", "advanced"]).default("intermediate"),
     }))
     .mutation(async ({ ctx, input }) => {
+      console.log(`[course.create] Starting course creation for topic: "${input.topic}" by user ${ctx.user.id}`);
+      
       // Generate course structure using AI
-      const courseStructure = await ai.generateCourseStructure(
-        input.topic,
-        input.approach,
-        input.courseLength,
-        input.lessonsPerChapter,
-        input.contentDepth
-      );
+      let courseStructure;
+      try {
+        courseStructure = await ai.generateCourseStructure(
+          input.topic,
+          input.approach,
+          input.courseLength,
+          input.lessonsPerChapter,
+          input.contentDepth
+        );
+        console.log(`[course.create] AI generated course: "${courseStructure.title}" with ${courseStructure.chapters.length} chapters`);
+      } catch (error) {
+        console.error(`[course.create] AI generation failed:`, error);
+        throw new Error(`Failed to generate course structure: ${error instanceof Error ? error.message : String(error)}`);
+      }
 
       // Create course in database
       const courseId = await db.createCourse({
@@ -38,6 +47,8 @@ const courseRouter = router({
         lessonsPerChapter: input.lessonsPerChapter,
         contentDepth: input.contentDepth,
       });
+
+      const lessonImageQueue: Array<{ lessonId: number; courseId: number; title: string; content: string }> = [];
 
       // Create chapters and lessons
       for (let chapterIndex = 0; chapterIndex < courseStructure.chapters.length; chapterIndex++) {
@@ -72,30 +83,8 @@ const courseRouter = router({
             );
           }
 
-          // Auto-generate one illustration per lesson
-          try {
-            const mediaResult = await ai.generateLessonMedia(
-              lesson.title,
-              lesson.content,
-              "illustration",
-              "modern"
-            );
-            
-            if (mediaResult.url) {
-              await db.createIllustration({
-                lessonId,
-                courseId,
-                imageUrl: mediaResult.url,
-                mediaType: "illustration",
-                visualStyle: "modern",
-                caption: `Illustration for ${lesson.title}`,
-                orderIndex: 0,
-              });
-            }
-          } catch (error) {
-            console.error(`Failed to generate illustration for lesson ${lesson.title}:`, error);
-            // Continue even if illustration generation fails
-          }
+          // Queue lesson for background image generation
+          lessonImageQueue.push({ lessonId, courseId, title: lesson.title, content: lesson.content });
         }
       }
 
@@ -111,6 +100,40 @@ const courseRouter = router({
         );
       }
 
+      // Fire-and-forget: generate illustrations in the background
+      // This runs after the response is sent so the user doesn't wait
+      if (lessonImageQueue.length > 0) {
+        console.log(`[course.create] Starting background image generation for ${lessonImageQueue.length} lessons`);
+        (async () => {
+          for (const item of lessonImageQueue) {
+            try {
+              const mediaResult = await ai.generateLessonMedia(
+                item.title,
+                item.content,
+                "illustration",
+                "modern"
+              );
+              if (mediaResult.url) {
+                await db.createIllustration({
+                  lessonId: item.lessonId,
+                  courseId: item.courseId,
+                  imageUrl: mediaResult.url,
+                  mediaType: "illustration",
+                  visualStyle: "modern",
+                  caption: `Illustration for ${item.title}`,
+                  orderIndex: 0,
+                });
+                console.log(`[course.create] Generated illustration for: ${item.title}`);
+              }
+            } catch (error) {
+              console.error(`[course.create] Failed to generate illustration for ${item.title}:`, error);
+            }
+          }
+          console.log(`[course.create] Background image generation complete for course ${courseId}`);
+        })().catch(err => console.error('[course.create] Background image generation error:', err));
+      }
+
+      console.log(`[course.create] Course created successfully: ${courseId} - "${courseStructure.title}"`);
       return { courseId, title: courseStructure.title };
     }),
 
