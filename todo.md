@@ -236,6 +236,8 @@
 - [x] Debug full course PDF export failing in production
 - [x] Add error logging to PDF export endpoint
 - [x] Fix Puppeteer error handling with try-catch blocks
+- [x] Increase Puppeteer timeout to 60 seconds for large courses
+- [x] Add timeout handling for browser launch and page rendering
 
 
 ## Homepage & Onboarding Repositioning

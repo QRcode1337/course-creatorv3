@@ -341,10 +341,12 @@ export async function generateLessonPdf(data: LessonPdfData): Promise<Buffer> {
     browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      timeout: 60000,
     });
 
     const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+    // Set longer timeout for large courses with many images
+    await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 60000 });
     
     const pdfBuffer = await page.pdf({
       format: "A4",
@@ -904,10 +906,12 @@ export async function generateCoursePdf(data: CoursePdfData): Promise<Buffer> {
     browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      timeout: 60000,
     });
 
     const page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+    // Set longer timeout for large courses with many images
+    await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 60000 });
     
     const pdfBuffer = await page.pdf({
       format: "A4",

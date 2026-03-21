@@ -221,6 +221,7 @@ const courseRouter = router({
     .input(z.object({ courseId: z.number() }))
     .mutation(async ({ input }) => {
       try {
+        console.log(`[exportPdf] Starting for course ${input.courseId}`);
         const course = await db.getCourseById(input.courseId);
         if (!course) throw new Error("Course not found");
 
@@ -256,6 +257,7 @@ const courseRouter = router({
         const glossaryTerms = await db.getGlossaryTermsByCourseId(input.courseId);
 
         // Generate PDF
+        console.log(`[exportPdf] Generating PDF...`);
         const { generateCoursePdf } = await import("./pdfGenerator");
         const pdfBuffer = await generateCoursePdf({
           title: course.title,
@@ -271,12 +273,13 @@ const courseRouter = router({
         });
 
         // Return base64 encoded PDF
+        console.log(`[exportPdf] PDF generated, size: ${pdfBuffer.length} bytes`);
         return {
           pdf: pdfBuffer.toString("base64"),
           filename: `${course.title.replace(/[^a-zA-Z0-9]/g, "_")}_Course.pdf`,
         };
       } catch (error) {
-        console.error("Error exporting course PDF:", error);
+        console.error(`[exportPdf] Error:`, error);
         throw new Error(`Failed to export course PDF: ${error instanceof Error ? error.message : String(error)}`);
       }
     }),
@@ -416,9 +419,10 @@ const lessonRouter = router({
       // Get user notes
       const userNote = await db.getUserNote(ctx.user.id, input.lessonId);
 
-      // Generate PDF
-      const { generateLessonPdf } = await import("./pdfGenerator");
-      const pdfBuffer = await generateLessonPdf({
+        // Generate PDF
+        console.log(`[lesson.exportPdf] Generating PDF...`);
+        const { generateLessonPdf } = await import("./pdfGenerator");
+        const pdfBuffer = await generateLessonPdf({
         courseTitle: course.title,
         chapterTitle: chapter.title,
         lessonTitle: lesson.title,
@@ -596,31 +600,37 @@ const quizRouter = router({
   // Generate quiz for a lesson
   generate: protectedProcedure
     .input(z.object({ lessonId: z.number(), courseId: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      const lesson = await db.getLessonById(input.lessonId);
-      if (!lesson) throw new Error("Lesson not found");
+    .mutation(async ({ input }) => {
+      try {
+        const lesson = await db.getLessonById(input.lessonId);
+        if (!lesson) throw new Error("Lesson not found");
 
-      // Check if quiz already exists
-      const existingQuiz = await db.getQuizByLessonId(input.lessonId);
-      if (existingQuiz) {
-        return { success: true, quizId: existingQuiz.id, message: "Quiz already exists" };
+        // Check if quiz already exists
+        const existingQuiz = await db.getQuizByLessonId(input.lessonId);
+        if (existingQuiz) {
+          return { success: true, quizId: existingQuiz.id, message: "Quiz already exists" };
+        }
+
+        const glossaryTerms = await db.getGlossaryTermsByLessonId(input.lessonId);
+        const quiz = await ai.generateQuiz(
+          lesson.title,
+          lesson.content || "",
+          glossaryTerms.map(t => ({ term: t.term, definition: t.definition || "" }))
+        );
+
+        const quizId = await db.createQuiz({
+          lessonId: input.lessonId,
+          courseId: input.courseId,
+          questions: quiz.questions,
+        });
+
+        return { success: true, quizId };
+      } catch (error) {
+        console.error("Error generating quiz:", error);
+        throw new Error(`Failed to generate quiz: ${error instanceof Error ? error.message : String(error)}`);
       }
-
-      const glossaryTerms = await db.getGlossaryTermsByLessonId(input.lessonId);
-      const quiz = await ai.generateQuiz(
-        lesson.title,
-        lesson.content || "",
-        glossaryTerms.map(t => ({ term: t.term, definition: t.definition || "" }))
-      );
-
-      const quizId = await db.createQuiz({
-        lessonId: input.lessonId,
-        courseId: input.courseId,
-        questions: quiz.questions,
-      });
-
-      return { success: true, quizId };
     }),
+
 
   // Get quiz for a lesson
   get: publicProcedure
