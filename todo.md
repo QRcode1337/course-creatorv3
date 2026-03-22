@@ -284,3 +284,10 @@
 - [x] Check AI generation endpoint is responding - confirmed working with direct test
 - [x] Fix root cause - deferred image generation to background process
 - [x] Verify courses can be created and displayed - all 25 tests pass
+
+## PDF Export Debugging Session
+- [x] Increase test timeout from 15s to 30s for course PDF generation
+- [x] Improve error handling in CourseView.tsx to show detailed error messages
+- [x] Verify PDF export works with authentication (27/27 tests pass)
+- [x] Confirm endpoint requires login (protectedProcedure is correct)
+- [x] Test PDF generation directly - works correctly (183KB course PDF, 89KB lesson PDF)

@@ -126,8 +126,10 @@ export default function CourseView() {
       
       toast.success("Course PDF downloaded!");
     },
-    onError: () => {
-      toast.error("Failed to generate PDF");
+    onError: (error) => {
+      console.error('[exportPdf] Error:', error);
+      const message = error.message || "Failed to generate PDF";
+      toast.error(message);
     },
   });
 

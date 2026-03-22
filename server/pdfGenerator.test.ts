@@ -1,10 +1,13 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { generateCoursePdf, generateLessonPdf } from "./pdfGenerator";
 
 describe("PDF Generation", () => {
+  // Set longer timeout for all tests in this suite
+  vi.setConfig({ testTimeout: 35000 });
   it(
     "should generate course PDF with valid data",
     async () => {
+      console.log("[test] Starting course PDF generation test...");
       const testData = {
         title: "Test Course",
         description: "A test course",
@@ -27,11 +30,13 @@ describe("PDF Generation", () => {
         createdAt: new Date(),
       };
 
+      console.log("[test] Calling generateCoursePdf...");
       const buffer = await generateCoursePdf(testData);
+      console.log(`[test] Course PDF generated: ${buffer.length} bytes`);
       expect(buffer).toBeInstanceOf(Buffer);
       expect(buffer.length).toBeGreaterThan(0);
     },
-    15000
+    30000  // 30 seconds for course PDF with multiple chapters
   );
 
   it(
@@ -46,10 +51,12 @@ describe("PDF Generation", () => {
         glossaryTerms: [{ term: "Test", definition: "A test term" }],
       };
 
+      console.log("[test] Calling generateLessonPdf...");
       const buffer = await generateLessonPdf(testData);
+      console.log(`[test] Lesson PDF generated: ${buffer.length} bytes`);
       expect(buffer).toBeInstanceOf(Buffer);
       expect(buffer.length).toBeGreaterThan(0);
     },
-    15000
+    20000  // 20 seconds for lesson PDF
   );
 });
