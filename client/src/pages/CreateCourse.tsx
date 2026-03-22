@@ -74,7 +74,23 @@ export default function CreateCourse() {
       navigate("/preview");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to generate preview");
+      console.error('[previewCourse] Error:', error);
+      
+      // Handle rate limit errors specifically
+      if (error.data?.code === 'TOO_MANY_REQUESTS') {
+        const cause = (error.data as any)?.cause;
+        const retryAfter = cause?.retryAfter;
+        let message = "Rate limit exceeded. Maximum 3 previews per hour.";
+        
+        if (retryAfter) {
+          const minutes = Math.ceil(retryAfter / 60);
+          message += ` Try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`;
+        }
+        
+        toast.error(message);
+      } else {
+        toast.error(error.message || "Failed to generate preview");
+      }
     },
   });
 

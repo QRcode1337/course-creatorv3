@@ -5,6 +5,8 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import * as ai from "./ai";
+import { getClientIp, checkRateLimit } from "./rateLimit";
+import { TRPCError } from "@trpc/server";
 
 // Course router
 const courseRouter = router({
@@ -147,7 +149,26 @@ const courseRouter = router({
     .input(z.object({
       topic: z.string().min(1),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Get client IP for rate limiting
+      const clientIp = getClientIp(ctx.req);
+      const rateLimitResult = checkRateLimit(clientIp);
+      
+      // Check if rate limit exceeded
+      if (!rateLimitResult.allowed) {
+        console.warn(`[course.preview] Rate limit exceeded for IP: ${clientIp}`);
+        throw new TRPCError({
+          code: 'TOO_MANY_REQUESTS',
+          message: `Rate limit exceeded. Maximum 3 previews per hour. Try again in ${rateLimitResult.retryAfter} seconds.`,
+          cause: {
+            retryAfter: rateLimitResult.retryAfter,
+            resetTime: new Date(rateLimitResult.resetTime).toISOString(),
+          },
+        });
+      }
+      
+      console.log(`[course.preview] Generating preview for topic: "${input.topic}" from IP: ${clientIp} (${rateLimitResult.remaining} previews remaining)`);
+      
       // Generate a short preview course structure using AI
       const courseStructure = await ai.generateCourseStructure(
         input.topic,

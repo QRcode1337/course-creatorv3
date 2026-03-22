@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+import { resetRateLimit } from "./rateLimit";
 
 // Mock the AI module
 vi.mock("./ai", () => ({
@@ -139,6 +140,8 @@ function createPublicContext(): TrpcContext {
 describe("Course Preview (Public)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset rate limits for test IP
+    resetRateLimit("unknown");
   });
 
   it("generates a preview course without authentication", async () => {

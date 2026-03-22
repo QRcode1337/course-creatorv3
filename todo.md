@@ -291,3 +291,14 @@
 - [x] Verify PDF export works with authentication (27/27 tests pass)
 - [x] Confirm endpoint requires login (protectedProcedure is correct)
 - [x] Test PDF generation directly - works correctly (183KB course PDF, 89KB lesson PDF)
+
+
+## Rate-Limiting for Public Preview Endpoint
+- [x] Create rate-limiting utility with IP-based throttling
+- [x] Implement 3 previews per hour limit per IP
+- [x] Add rate-limit headers to responses (via TRPCError cause)
+- [x] Apply rate-limiting to course.preview endpoint
+- [x] Add error handling for rate-limit exceeded
+- [x] Update frontend to show rate-limit error messages with retry time
+- [x] Write tests for rate-limiting functionality (11 tests in rateLimit.test.ts)
+- [x] Clean up expired rate-limit entries periodically (every 5 minutes)
