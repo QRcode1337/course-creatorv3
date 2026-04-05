@@ -302,3 +302,13 @@
 - [x] Update frontend to show rate-limit error messages with retry time
 - [x] Write tests for rate-limiting functionality (11 tests in rateLimit.test.ts)
 - [x] Clean up expired rate-limit entries periodically (every 5 minutes)
+
+
+## Progressive Rate-Limiting for Authenticated Users
+- [x] Update rate-limiting utility to support tiered limits
+- [x] Implement 3 previews/hour for guests, 10 for authenticated users
+- [x] Add optional premium tier (unlimited previews)
+- [x] Modify preview endpoint to pass user context to rate limiter
+- [x] Update frontend to show different rate-limit messages based on auth status
+- [x] Add tests for tiered rate-limiting (guest vs authenticated) - 14 new tests
+- [x] Display signup CTA when guest hits rate limit

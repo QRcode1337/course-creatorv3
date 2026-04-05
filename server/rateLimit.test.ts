@@ -129,7 +129,7 @@ describe("Rate Limiting", () => {
       
       // Get initial stats
       let stats = getRateLimitStats();
-      expect(stats.totalTrackedIps).toBe(1);
+      expect(stats.totalTrackedIdentifiers).toBe(1);
       
       // Mock time to move past the window
       const now = Date.now();
@@ -142,7 +142,7 @@ describe("Rate Limiting", () => {
       
       // Stats should show no tracked IPs
       stats = getRateLimitStats();
-      expect(stats.totalTrackedIps).toBe(0);
+      expect(stats.totalTrackedIdentifiers).toBe(0);
       
       vi.useRealTimers();
     });
@@ -157,7 +157,7 @@ describe("Rate Limiting", () => {
       
       // Stats should still show the entry
       const stats = getRateLimitStats();
-      expect(stats.totalTrackedIps).toBe(1);
+      expect(stats.totalTrackedIdentifiers).toBe(1);
     });
   });
 
@@ -191,7 +191,7 @@ describe("Rate Limiting", () => {
       checkRateLimit("192.168.1.2");
       
       const stats = getRateLimitStats();
-      expect(stats.totalTrackedIps).toBe(2);
+      expect(stats.totalTrackedIdentifiers).toBe(2);
       expect(stats.store["192.168.1.1"]).toBeDefined();
       expect(stats.store["192.168.1.1"].count).toBe(2);
       expect(stats.store["192.168.1.2"]).toBeDefined();
@@ -200,7 +200,7 @@ describe("Rate Limiting", () => {
 
     it("should return empty stats when no IPs tracked", () => {
       const stats = getRateLimitStats();
-      expect(stats.totalTrackedIps).toBe(0);
+      expect(stats.totalTrackedIdentifiers).toBe(0);
       expect(Object.keys(stats.store).length).toBe(0);
     });
   });

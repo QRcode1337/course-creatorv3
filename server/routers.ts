@@ -5,7 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import * as ai from "./ai";
-import { getClientIp, checkRateLimit } from "./rateLimit";
+import { getClientIp, checkRateLimit, getUserTier } from "./rateLimit";
 import { TRPCError } from "@trpc/server";
 
 // Course router
@@ -150,16 +150,18 @@ const courseRouter = router({
       topic: z.string().min(1),
     }))
     .mutation(async ({ input, ctx }) => {
-      // Get client IP for rate limiting
+      // Get client IP and determine user tier for rate limiting
       const clientIp = getClientIp(ctx.req);
-      const rateLimitResult = checkRateLimit(clientIp);
+      const userTier = getUserTier(ctx.user?.id ? String(ctx.user.id) : null);
+      const identifier = ctx.user?.id ? String(ctx.user.id) : clientIp; // Use user ID if authenticated, IP otherwise
+      const rateLimitResult = checkRateLimit(identifier, userTier);
       
       // Check if rate limit exceeded
       if (!rateLimitResult.allowed) {
-        console.warn(`[course.preview] Rate limit exceeded for IP: ${clientIp}`);
+        console.warn(`[course.preview] Rate limit exceeded for identifier: ${identifier} (tier: ${userTier})`);
         throw new TRPCError({
           code: 'TOO_MANY_REQUESTS',
-          message: `Rate limit exceeded. Maximum 3 previews per hour. Try again in ${rateLimitResult.retryAfter} seconds.`,
+          message: `Rate limit exceeded. Maximum ${userTier === 'guest' ? 3 : 10} previews per hour. Try again in ${rateLimitResult.retryAfter} seconds.`,
           cause: {
             retryAfter: rateLimitResult.retryAfter,
             resetTime: new Date(rateLimitResult.resetTime).toISOString(),
@@ -167,7 +169,11 @@ const courseRouter = router({
         });
       }
       
-      console.log(`[course.preview] Generating preview for topic: "${input.topic}" from IP: ${clientIp} (${rateLimitResult.remaining} previews remaining)`);
+      const tierLimit = userTier === 'guest' ? 3 : userTier === 'authenticated' ? 10 : Infinity;
+      console.log(`[course.preview] Generating preview for topic: "${input.topic}" from ${userTier} (${rateLimitResult.remaining}/${tierLimit} previews remaining)`);
+      if (userTier === 'guest') {
+        console.log(`[course.preview] Hint: Sign up to get 7 more previews per hour!`);
+      }
       
       // Generate a short preview course structure using AI
       const courseStructure = await ai.generateCourseStructure(

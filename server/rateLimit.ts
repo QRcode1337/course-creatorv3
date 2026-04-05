@@ -8,13 +8,24 @@ interface RateLimitEntry {
   resetTime: number;
 }
 
+export type { UserTier };
+
 // In-memory store for rate limit tracking
+// Key: IP address for guests, user ID for authenticated users
 // In production, consider using Redis for distributed rate limiting
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
 // Configuration
 const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
-const RATE_LIMIT_MAX_REQUESTS = 3; // 3 previews per hour per IP
+
+// Tiered rate limits
+const RATE_LIMIT_TIERS = {
+  guest: 3,        // 3 previews per hour for guests
+  authenticated: 10, // 10 previews per hour for authenticated users
+  premium: Infinity, // Unlimited for premium users
+} as const;
+
+type UserTier = keyof typeof RATE_LIMIT_TIERS;
 
 /**
  * Extract client IP from request
@@ -59,17 +70,27 @@ export function getClientIp(request: any): string {
 }
 
 /**
- * Check if an IP has exceeded rate limit
+ * Check if an IP/user has exceeded rate limit
  * Returns { allowed: boolean, remaining: number, resetTime: number }
  */
-export function checkRateLimit(ip: string): {
+export function checkRateLimit(identifier: string, tier: UserTier = 'guest'): {
   allowed: boolean;
   remaining: number;
   resetTime: number;
   retryAfter?: number;
 } {
   const now = Date.now();
-  const entry = rateLimitStore.get(ip);
+  const entry = rateLimitStore.get(identifier);
+  const limit = RATE_LIMIT_TIERS[tier];
+  
+  // Premium users have unlimited previews
+  if (tier === 'premium') {
+    return {
+      allowed: true,
+      remaining: Infinity,
+      resetTime: now + RATE_LIMIT_WINDOW,
+    };
+  }
   
   // If no entry exists or window has expired, create new entry
   if (!entry || now > entry.resetTime) {
@@ -77,17 +98,17 @@ export function checkRateLimit(ip: string): {
       count: 1,
       resetTime: now + RATE_LIMIT_WINDOW,
     };
-    rateLimitStore.set(ip, newEntry);
+    rateLimitStore.set(identifier, newEntry);
     
     return {
       allowed: true,
-      remaining: RATE_LIMIT_MAX_REQUESTS - 1,
+      remaining: limit - 1,
       resetTime: newEntry.resetTime,
     };
   }
   
   // Check if limit exceeded
-  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
+  if (entry.count >= limit) {
     const retryAfter = Math.ceil((entry.resetTime - now) / 1000); // seconds
     return {
       allowed: false,
@@ -101,7 +122,7 @@ export function checkRateLimit(ip: string): {
   entry.count++;
   return {
     allowed: true,
-    remaining: RATE_LIMIT_MAX_REQUESTS - entry.count,
+    remaining: limit - entry.count,
     resetTime: entry.resetTime,
   };
 }
@@ -127,17 +148,27 @@ export function cleanupExpiredEntries(): number {
 }
 
 /**
- * Reset rate limit for a specific IP (admin function)
+ * Reset rate limit for a specific identifier (admin function)
  */
-export function resetRateLimit(ip: string): void {
-  rateLimitStore.delete(ip);
+export function resetRateLimit(identifier: string): void {
+  rateLimitStore.delete(identifier);
+}
+
+/**
+ * Get the tier for a user
+ */
+export function getUserTier(userId: string | null): UserTier {
+  if (!userId) return 'guest';
+  // TODO: Check user's subscription status in database
+  // For now, all authenticated users get 'authenticated' tier
+  return 'authenticated';
 }
 
 /**
  * Get current rate limit stats (for monitoring)
  */
 export function getRateLimitStats(): {
-  totalTrackedIps: number;
+  totalTrackedIdentifiers: number;
   store: Record<string, { count: number; resetTime: string }>;
 } {
   const store: Record<string, { count: number; resetTime: string }> = {};
@@ -150,10 +181,13 @@ export function getRateLimitStats(): {
   });
   
   return {
-    totalTrackedIps: rateLimitStore.size,
+    totalTrackedIdentifiers: rateLimitStore.size,
     store,
   };
 }
+
+// Export tier configuration for frontend
+export const TIER_LIMITS = RATE_LIMIT_TIERS;
 
 // Cleanup expired entries every 5 minutes
 setInterval(() => {

@@ -80,11 +80,11 @@ export default function CreateCourse() {
       if (error.data?.code === 'TOO_MANY_REQUESTS') {
         const cause = (error.data as any)?.cause;
         const retryAfter = cause?.retryAfter;
-        let message = "Rate limit exceeded. Maximum 3 previews per hour.";
+        let message = error.message || "Rate limit exceeded.";
         
-        if (retryAfter) {
-          const minutes = Math.ceil(retryAfter / 60);
-          message += ` Try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`;
+        // Add signup CTA for guests
+        if (!user) {
+          message += " Sign up to get 10 previews per hour (vs 3 for guests).";
         }
         
         toast.error(message);
