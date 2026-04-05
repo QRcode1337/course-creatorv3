@@ -6,6 +6,7 @@ import { z } from "zod";
 import * as db from "./db";
 import * as ai from "./ai";
 import { getClientIp, checkRateLimit, getUserTier } from "./rateLimit";
+import { trackPreviewEvent, getAnalyticsStats, getConversionStats } from "./analytics";
 import { TRPCError } from "@trpc/server";
 
 // Course router
@@ -1322,6 +1323,29 @@ export const appRouter = router({
   relatedTopics: relatedTopicsRouter,
   document: documentRouter,
   aiChat: aiChatRouter,
+
+  // Analytics endpoints (public for now, should be protected in production)
+  analytics: router({
+    stats: publicProcedure
+      .input(z.object({
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+        userTier: z.enum(['guest', 'authenticated', 'premium']).optional(),
+      }))
+      .query(async ({ input }) => {
+        return await getAnalyticsStats({
+          startDate: input.startDate,
+          endDate: input.endDate,
+          userTier: input.userTier,
+        });
+      }),
+    
+    conversion: publicProcedure
+      .query(async () => {
+        return await getConversionStats();
+      }),
+  }),
+
 });
 
 export type AppRouter = typeof appRouter;

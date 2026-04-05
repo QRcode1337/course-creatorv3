@@ -277,6 +277,20 @@
 - [x] Write vitest tests for preview endpoint (5 tests)
 - [x] Guest-friendly CreateCourse.tsx with preview generation flow
 
+## Analytics Dashboard Implementation
+- [x] Create preview_events and guest_signup_tracking tables
+- [x] Add analytics tracking functions (trackPreviewEvent, getAnalyticsStats, getConversionStats)
+- [x] Add analytics router endpoints (stats, conversion queries)
+- [x] Integrate analytics tracking into preview endpoint
+- [x] Create Analytics.tsx dashboard page with charts
+- [x] Add date range and tier filtering to dashboard
+- [x] Display key metrics: total previews, success rate, conversion rate, avg previews before signup
+- [x] Show top topics and tier distribution charts
+- [ ] Add Analytics page to App.tsx routes
+- [ ] Add Analytics link to navigation
+- [ ] Write tests for analytics functions
+- [ ] Test dashboard with sample data
+
 ## Critical Bug - Courses Not Being Created or Shown
 - [x] Investigate why course creation is failing - identified timeout in image generation
 - [x] Check server logs for errors during course.create mutation - added detailed logging
@@ -312,3 +326,15 @@
 - [x] Update frontend to show different rate-limit messages based on auth status
 - [x] Add tests for tiered rate-limiting (guest vs authenticated) - 14 new tests
 - [x] Display signup CTA when guest hits rate limit
+
+
+## Analytics Dashboard for Preview Tracking
+- [ ] Create analytics schema in database (preview_events table)
+- [ ] Track guest preview attempts (IP, timestamp, tier, success/failure)
+- [ ] Track authenticated preview attempts (user ID, timestamp, tier, success/failure)
+- [ ] Create backend analytics endpoints (guest vs authenticated stats)
+- [ ] Build analytics dashboard page with charts
+- [ ] Display preview generation trends over time
+- [ ] Show signup conversion rate (previews → signups)
+- [ ] Display tier distribution (guest vs authenticated usage)
+- [ ] Add tests for analytics tracking and endpoints

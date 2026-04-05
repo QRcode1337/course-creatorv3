@@ -1,4 +1,5 @@
 import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, float, boolean, json } from "drizzle-orm/mysql-core";
+import { relations } from "drizzle-orm";
 
 /**
  * Core user table backing auth flow.
@@ -309,3 +310,58 @@ export const importedDocuments = mysqlTable("imported_documents", {
 
 export type ImportedDocument = typeof importedDocuments.$inferSelect;
 export type InsertImportedDocument = typeof importedDocuments.$inferInsert;
+
+
+/**
+ * Preview events table - tracks guest and authenticated preview generation attempts
+ * Used for analytics and measuring signup conversion
+ */
+export const previewEvents = mysqlTable("preview_events", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"), // null for guests
+  clientIp: varchar("clientIp", { length: 45 }), // IPv4 or IPv6
+  userTier: mysqlEnum("userTier", ["guest", "authenticated", "premium"]).notNull(),
+  topic: varchar("topic", { length: 255 }).notNull(),
+  success: boolean("success").notNull().default(true),
+  errorCode: varchar("errorCode", { length: 64 }), // e.g., "TOO_MANY_REQUESTS"
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  
+});
+
+export type PreviewEvent = typeof previewEvents.$inferSelect;
+export type InsertPreviewEvent = typeof previewEvents.$inferInsert;
+
+/**
+ * Guest signups tracking - correlate guest IPs with eventual signups
+ * Helps measure conversion from guest preview to authenticated user
+ */
+export const guestSignupTracking = mysqlTable("guest_signup_tracking", {
+  id: int("id").autoincrement().primaryKey(),
+  clientIp: varchar("clientIp", { length: 45 }).notNull(),
+  previewCount: int("previewCount").default(0).notNull(),
+  lastPreviewAt: timestamp("lastPreviewAt"),
+  signedUpUserId: int("signedUpUserId"), // null until they sign up
+  signedUpAt: timestamp("signedUpAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  
+});
+
+export type GuestSignupTracking = typeof guestSignupTracking.$inferSelect;
+export type InsertGuestSignupTracking = typeof guestSignupTracking.$inferInsert;
+
+// Relations for analytics tables
+export const previewEventsRelations = relations(previewEvents, ({ one }) => ({
+  user: one(users, {
+    fields: [previewEvents.userId],
+    references: [users.id],
+  }),
+}));
+
+export const guestSignupTrackingRelations = relations(guestSignupTracking, ({ one }) => ({
+  signedUpUser: one(users, {
+    fields: [guestSignupTracking.signedUpUserId],
+    references: [users.id],
+  }),
+}));
