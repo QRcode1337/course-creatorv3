@@ -160,7 +160,7 @@ export async function getConversionStats() {
     totalGuests: (totalGuests[0]?.count as number) || 0,
     convertedGuests: (convertedGuests[0]?.count as number) || 0,
     conversionRate: Math.round(conversionRate * 100) / 100,
-    avgPreviewsBeforeSignup: Math.round((((avgPreviewsBeforeSignup[0]?.avgCount as number) || 0) * 100) / 100,
+    avgPreviewsBeforeSignup: Math.round((((avgPreviewsBeforeSignup[0]?.avgCount as number) || 0) * 100) / 100),
   };
 }
 

@@ -338,3 +338,11 @@
 - [ ] Show signup conversion rate (previews → signups)
 - [ ] Display tier distribution (guest vs authenticated usage)
 - [ ] Add tests for analytics tracking and endpoints
+
+
+## Deployment Fix - Replace Puppeteer with pdfkit
+- [x] Rewrite pdfGenerator.ts to use pdfkit instead of Puppeteer
+- [x] Remove Puppeteer dependency from package.json
+- [x] Update PDF generation tests for pdfkit (5 tests, 249ms vs 30s+)
+- [x] Verify TypeScript compiles with zero errors
+- [x] All 60 tests pass including PDF generation
